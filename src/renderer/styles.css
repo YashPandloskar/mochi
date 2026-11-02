@@ -1,0 +1,155 @@
+/* All values come from src/theme.js through CSS variables set in app.js. */
+
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  font-family: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+  color: var(--text);
+  user-select: none;
+}
+
+#notch {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  overflow: hidden;
+  /* width, height, border-radius and background are set from the theme in app.js */
+  transition:
+    width var(--resize) var(--easing),
+    height var(--resize) var(--easing),
+    border-radius var(--resize) var(--easing);
+}
+
+#notch.glow {
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+}
+
+.gradient {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity var(--fade) linear;
+}
+#notch.expanded .gradient { opacity: 1; }
+
+.content {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity var(--fade) linear;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+#notch.content-visible .content { opacity: 1; }
+
+/* ---------- Eyes ---------- */
+
+.eyes {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--collapsed-h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--eye-gap);
+  transition: opacity var(--fade) linear;
+}
+#notch.expanded .eyes { opacity: 0; }
+
+.eye {
+  width: var(--ew);
+  height: var(--eh);
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: var(--ec);
+  filter: drop-shadow(var(--g-near)) drop-shadow(var(--g-far));
+  animation: pulse var(--pulse) ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% { filter: drop-shadow(var(--g-near-p)) drop-shadow(var(--g-far-p)); }
+}
+
+@keyframes blink {
+  0%, 93%, 100% { transform: scaleY(1); }
+  96% { transform: scaleY(0.1); }
+}
+
+/* idle */
+.eyes[data-state='idle'] .eye {
+  animation: pulse var(--pulse) ease-in-out infinite, blink var(--blink) ease-in-out infinite;
+}
+
+/* working: flat ovals, slow drift */
+.eyes[data-state='working'] {
+  animation: drift var(--drift-s) ease-in-out infinite;
+}
+.eyes[data-state='working'] .eye {
+  animation: pulse var(--pulse) ease-in-out infinite, blink var(--blink) ease-in-out infinite;
+}
+@keyframes drift {
+  0%, 100% { transform: translateX(calc(var(--drift) * -1)); }
+  50% { transform: translateX(var(--drift)); }
+}
+
+/* needs you: tall ovals, double hop */
+.eyes[data-state='needs'] {
+  animation: hop var(--hop-s) ease-out infinite;
+}
+@keyframes hop {
+  0%, 45%, 100% { transform: translateY(0); }
+  10%, 30% { transform: translateY(calc(var(--hop) * -1)); }
+  20%, 40% { transform: translateY(0); }
+}
+
+/* done: happy arcs pop in, then bob */
+.eyes[data-state='done'] {
+  animation: bob var(--bob-s) ease-in-out 0.5s infinite;
+}
+.eyes[data-state='done'] .eye {
+  background: transparent;
+  border-top: var(--arc) solid var(--ec);
+  border-radius: 50% 50% 0 0;
+  animation: pulse var(--pulse) ease-in-out infinite, pop 0.5s cubic-bezier(.3, 1.4, .5, 1) both;
+}
+@keyframes pop {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(calc(var(--bob) * -1)); }
+}
+
+.sparks {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+}
+.spark {
+  position: absolute;
+  left: -1.5px;
+  top: -1.5px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--ec);
+  opacity: 0;
+  animation: spark 0.7s ease-out 0.15s forwards;
+}
+@keyframes spark {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(0.3); opacity: 0; }
+}

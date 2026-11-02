@@ -1,0 +1,13 @@
+{
+  "name": "mochi",
+  "version": "0.1.0",
+  "description": "mochi: a notch for Claude Code",
+  "main": "src/main/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^45.2.1"
+  }
+}
