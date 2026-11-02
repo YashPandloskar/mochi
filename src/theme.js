@@ -51,6 +51,17 @@ const theme = {
     doneTurnGreenAfter: 4.5,
     doneCrossfade: 0.8,
     hoverPollMs: 50,
+    doneToIdleSeconds: 12, // how long "Done" is held before the session returns to idle
+    staleWorkingSeconds: 300, // no events for this long while working: fall back to idle
+    approvalTimeoutSeconds: 100, // then Claude Code's normal prompt takes over
+  },
+
+  // Hook side: tool names -> progress step. Step 4 (Done) comes from the Stop event.
+  steps: {
+    read: ['Read', 'Grep', 'Glob'],
+    edit: ['Edit', 'Write', 'MultiEdit', 'NotebookEdit'],
+    // a Bash command matching this counts as running tests
+    testCommand: '\\b(npm|pnpm|yarn|bun)\\s+(run\\s+)?t(est)?\\b|\\b(jest|vitest|pytest|mocha|phpunit|rspec|ctest)\\b|\\b(go|cargo|dotnet|gradle|mvn)\\s+test\\b',
   },
 
   // Collapsed-state eyes. Colour and shape follow the state.
