@@ -506,6 +506,15 @@
     notesView.update(d);
     home.update({ notes: d });
   });
+  // ask for the notes at start-up (and again shortly after) rather than relying on a single push
+  const pullNotes = () =>
+    window.mochi.notesGet().then((d) => {
+      if (!d) return;
+      notesView.update(d);
+      home.update({ notes: d });
+    }).catch(() => {});
+  pullNotes();
+  setTimeout(pullNotes, 4000);
 
   content.style.visibility = 'hidden';
   applyGeometry();

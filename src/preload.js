@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('mochi', {
   onSettings: (cb) => ipcRenderer.on('settings', (_e, s) => cb(s)),
   onChime: (cb) => ipcRenderer.on('chime', (_e, kind) => cb(kind)),
   notesSave: (data) => ipcRenderer.send('notes:save', data), // { todos: [{ text, done }], note }
+  notesGet: () => ipcRenderer.invoke('notes:get'), // asks for the current notes (start-up does not depend on a push)
   notesOpen: () => ipcRenderer.send('notes:open'), // opens notes.md in your editor
   onNotes: (cb) => ipcRenderer.on('notes', (_e, d) => cb(d)),
   onNotesStatus: (cb) => ipcRenderer.on('notes:status', (_e, s) => cb(s)), // { ok } or { ok: false, message }

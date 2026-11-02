@@ -1,4 +1,5 @@
 const { app, ipcMain, globalShortcut, shell } = require('electron');
+const fs = require('fs');
 const path = require('path');
 const theme = require('../theme');
 const config = require('./config');
@@ -139,12 +140,37 @@ app.whenReady().then(() => {
   // MOCHI_NOTES_FILE lets a test copy use a scratch file instead of your real notes
   const notes = new Notes({ file: process.env.MOCHI_NOTES_FILE || cfg.notesFile || path.join(config.configDir(), 'notes.md') });
   let notesData = { todos: [], note: '' };
-  try {
-    notesData = notes.load();
-  } catch (e) {
-    console.error('notes:', e.message); // unreadable file: start empty, never crash
-  }
+  // Until the file has been read successfully nothing is ever written back (an empty list must not replace a real one).
+  let notesLoaded = false;
+  let notesLoadTimer = null;
+  const logNotesError = (msg) => {
+    console.error('notes:', msg);
+    try {
+      fs.appendFileSync(path.join(config.configDir(), 'notes-error.log'), `${new Date().toISOString()} ${msg}\n`);
+    } catch {}
+  };
+  const loadNotes = () => {
+    if (notesLoaded) return true;
+    try {
+      notesData = notes.load();
+      notesLoaded = true;
+      clearTimeout(notesLoadTimer);
+      return true;
+    } catch (e) {
+      logNotesError('could not read ' + notes.file + ': ' + (e.code || e.message));
+      clearTimeout(notesLoadTimer);
+      notesLoadTimer = setTimeout(() => {
+        if (loadNotes()) pushNotes(); // the file became readable (just after login, say): show it
+      }, 3000);
+      return false;
+    }
+  };
+  loadNotes();
   const pushNotes = () => windowMgr.send('notes', { ...notesData, file: notes.file });
+  ipcMain.handle('notes:get', () => {
+    loadNotes();
+    return { ...notesData, file: notes.file };
+  });
   notes.on('external', (d) => {
     notesData = d;
     pushNotes();
@@ -156,6 +182,7 @@ app.whenReady().then(() => {
   const saveNotes = (data, tries = 0) => {
     clearTimeout(notesRetry);
     try {
+      if (!loadNotes()) throw Object.assign(new Error('notes file not readable yet'), { code: 'NOTREAD' });
       notes.save(data);
       notesData = Notes.clean(data);
       if (notesFailing) {
