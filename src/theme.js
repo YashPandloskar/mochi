@@ -18,9 +18,17 @@ const theme = {
 
   collapsed: {
     width: 120,
+    timerWidth: 196, // the collapsed notch widens to this while the Focus timer runs (ring, eyes, time)
     height: 30,
     radius: [0, 0, 14, 14],
     background: '#0b0b0b',
+  },
+
+  // Small extras that sit with the collapsed notch while something is going on.
+  companions: {
+    timer: { ring: '#b56cf0', text: '#c9a7ff', ringSize: 15, ringStroke: 2.2, fontSize: 11 },
+    // round album-art bubble beside the notch while Apple Music is playing or paused
+    music: { width: 34, height: 30, radius: [0, 0, 15, 15], gap: 6, art: 22, background: '#0b0b0b', pausedOpacity: 0.5 },
   },
 
   expanded: {

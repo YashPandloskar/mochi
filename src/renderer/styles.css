@@ -171,3 +171,53 @@ html, body {
   animation: sweep var(--sweep-s) ease-in-out infinite alternate;
 }
 @keyframes sweep { from { transform: translateX(-20px); opacity: 0.35; } to { transform: translateX(20px); opacity: 0.9; } }
+
+/* ---------- collapsed companions: Focus timer in the notch, album-art bubble beside it ---------- */
+#cring {
+  position: absolute;
+  left: 11px;
+  top: calc((var(--collapsed-h) - var(--ring-size)) / 2);
+  width: var(--ring-size);
+  height: var(--ring-size);
+  opacity: 0;
+  transition: opacity var(--fade) linear;
+  pointer-events: none;
+}
+#ctime {
+  position: absolute;
+  right: 12px;
+  top: 0;
+  height: var(--collapsed-h);
+  display: flex;
+  align-items: center;
+  font-size: var(--timer-font);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--timer-text);
+  opacity: 0;
+  transition: opacity var(--fade) linear;
+  pointer-events: none;
+}
+.cr-track { fill: none; stroke: color-mix(in srgb, var(--timer-ring) 28%, transparent); stroke-width: var(--ring-stroke); }
+.cr-arc { fill: none; stroke: var(--timer-ring); stroke-width: var(--ring-stroke); stroke-linecap: round; transition: stroke-dashoffset 0.5s linear; }
+#notch.timer-on:not(.expanded) #cring, #notch.timer-on:not(.expanded) #ctime { opacity: 1; }
+
+#bubble {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: var(--bubble-w);
+  height: var(--bubble-h);
+  border-radius: var(--bubble-radius);
+  background: var(--bubble-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none; /* purely visual: clicks pass through to whatever is behind */
+  transition: opacity var(--fade) linear, left var(--resize) var(--easing);
+}
+#bubble.show { opacity: 1; }
+#bubble.show.paused { opacity: var(--bubble-paused); }
+#bubble.hide-expanded { opacity: 0; }
+.bart { width: var(--bubble-art); height: var(--bubble-art); border-radius: 50%; background: rgba(255, 255, 255, 0.14) center / cover no-repeat; }

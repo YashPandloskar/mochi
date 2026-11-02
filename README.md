@@ -68,6 +68,15 @@ The panel opens on Home when idle and on Claude while a job runs or has just fin
 takes over (it has no nav bar). The nav bar can be taken off the Working and Done panels with
 `nav.onPanels: false` in `src/theme.js` (they then go back to heights 200 and 214).
 
+## While the notch is collapsed
+
+- **Focus timer running:** the notch widens: a purple progress ring on the left, the eyes in the middle,
+  the time left on the right. It shrinks back when the timer ends or is reset.
+- **Apple Music playing or paused:** a small round album-art bubble sits beside the notch (dimmed while paused).
+  It is purely visual, so clicks go through it.
+
+Both hide while the panel is open, and while game mode or Pause has the notch hidden.
+
 ## Tray settings
 
 | Setting | What it does |

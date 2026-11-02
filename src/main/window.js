@@ -3,7 +3,7 @@ const path = require('path');
 const theme = require('../theme');
 
 let win = null;
-let hitSize = { w: theme.collapsed.width, h: theme.collapsed.height };
+let hitSize = { w: theme.collapsed.width, h: theme.collapsed.height, collapsed: true };
 let hovering = false;
 let pollTimer = null;
 let visible = true;
@@ -80,7 +80,7 @@ function poll() {
 
   // A flick across the top of the screen must not open the notch: when it is collapsed the pointer
   // has to rest on it for a moment first. An already-open panel responds at once.
-  const collapsed = hitSize.w <= theme.collapsed.width;
+  const collapsed = !!hitSize.collapsed;
   if (inside && !hovering && collapsed) {
     if (!insideSince) insideSince = Date.now();
     if (Date.now() - insideSince < theme.timings.hoverDwell * 1000) inside = false;

@@ -10,10 +10,15 @@
   <link rel="stylesheet" href="views/panels.css">
 </head>
 <body>
+  <!-- album-art bubble beside the collapsed notch -->
+  <div id="bubble"><div class="bart" id="bart"></div></div>
   <div id="notch">
     <div class="gradient"></div>
     <div class="gradient gradient-alt"></div>
     <div class="eyes" id="eyes"></div>
+    <!-- collapsed Focus timer: ring on the left, time on the right -->
+    <svg id="cring" viewBox="0 0 20 20"><circle class="cr-track" cx="10" cy="10" r="7"/><circle class="cr-arc" id="cr-arc" cx="10" cy="10" r="7" transform="rotate(-90 10 10)"/></svg>
+    <span id="ctime"></span>
     <div class="content" id="content"></div>
   </div>
   <script src="components/icons.js"></script>

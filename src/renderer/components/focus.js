@@ -13,8 +13,11 @@
       endsAt = 0;
       finishedUntil = Date.now() + 8000;
       window.mochi.focusDone();
+      changed();
     }
   }
+  const listeners = [];
+  const changed = () => listeners.forEach((fn) => fn());
   setInterval(check, 500); // keeps counting even while the notch is collapsed
 
   window.Focus = {
@@ -31,9 +34,11 @@
     step(dir) {
       return this.setMinutes(minutes + dir * H.focusStepMinutes);
     },
+    onChange: (fn) => listeners.push(fn), // starts, resets and finishes
     toggle() {
       endsAt = endsAt ? 0 : Date.now() + total * 1000;
       finishedUntil = 0;
+      changed();
     },
     read() {
       check();

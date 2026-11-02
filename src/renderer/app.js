@@ -68,6 +68,17 @@
     '--wobble-deg': theme.needs.wobbleDeg + 'deg',
     '--wobble-s': theme.needs.wobbleSeconds + 's',
     '--q-s': theme.needs.questionSeconds + 's',
+    '--ring-size': theme.companions.timer.ringSize + 'px',
+    '--ring-stroke': theme.companions.timer.ringStroke,
+    '--timer-ring': theme.companions.timer.ring,
+    '--timer-text': theme.companions.timer.text,
+    '--timer-font': theme.companions.timer.fontSize + 'px',
+    '--bubble-w': theme.companions.music.width + 'px',
+    '--bubble-h': theme.companions.music.height + 'px',
+    '--bubble-radius': radius(theme.companions.music.radius),
+    '--bubble-bg': theme.companions.music.background,
+    '--bubble-art': theme.companions.music.art + 'px',
+    '--bubble-paused': theme.companions.music.pausedOpacity,
     '--lean': theme.lively.leanScale,
     '--lean-s': theme.lively.leanSeconds + 's',
     '--dots-s': theme.lively.typingDotsSeconds + 's',
@@ -83,6 +94,13 @@
   let greenTimer = null;
   let lastSession = null;
   let lastMusic = null;
+  let timerOn = false; // the Focus timer is counting: the collapsed notch widens to show it
+  const bubble = document.getElementById('bubble');
+  const bart = document.getElementById('bart');
+  const cArc = document.getElementById('cr-arc');
+  const cTime = document.getElementById('ctime');
+  const RING_C = 2 * Math.PI * 7;
+  cArc.style.strokeDasharray = RING_C.toFixed(2);
   let tab = 'home'; // nav tab: home | claude | music | focus
   let musicTint = null; // album colour for the Music panel gradient
   let motion = theme.motion; // "subtle" or "lively" (tray setting overrides the theme default)
@@ -165,13 +183,19 @@
       gradient.style.background = `linear-gradient(to bottom, ${p.from}, ${to})`;
       if (p.fromAlt) gradientAlt.style.background = `linear-gradient(to bottom, ${p.fromAlt}, ${p.toAlt})`;
       notch.classList.toggle('is-done', key === 'done'); // the green crossfade belongs to the Done panel only
-      window.mochi.setHitSize({ w: theme.expanded.width, h });
+      window.mochi.setHitSize({ w: theme.expanded.width, h, collapsed: false });
+      bubble.classList.add('hide-expanded');
     } else {
-      notch.style.width = theme.collapsed.width + 'px';
+      const w = timerOn ? theme.collapsed.timerWidth : theme.collapsed.width;
+      notch.style.width = w + 'px';
       notch.style.height = theme.collapsed.height + 'px';
       notch.style.borderRadius = radius(theme.collapsed.radius);
       notch.style.background = theme.collapsed.background;
-      window.mochi.setHitSize({ w: theme.collapsed.width, h: theme.collapsed.height });
+      notch.classList.toggle('timer-on', timerOn);
+      // the bubble sits just right of the notch and follows it when it widens
+      bubble.style.left = `calc(50% + ${w / 2 + theme.companions.music.gap}px)`;
+      bubble.classList.remove('hide-expanded');
+      window.mochi.setHitSize({ w, h: theme.collapsed.height, collapsed: true });
     }
   }
 
@@ -210,6 +234,31 @@
     collapseTimer = setTimeout(() => {
       if (!hover && !autoOpens()) collapse();
     }, ms(theme.timings.collapseDelay));
+  }
+
+  // ---------- collapsed companions ----------
+  const mmss = (sec) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
+
+  function refreshTimer() {
+    const f = Focus.read();
+    if (f.running) {
+      cTime.textContent = mmss(f.left);
+      cArc.style.strokeDashoffset = (RING_C * (1 - f.left / f.total)).toFixed(2);
+    }
+    if (f.running !== timerOn) {
+      timerOn = f.running;
+      notch.classList.toggle('timer-on', timerOn);
+      if (!expanded) applyGeometry(); // widen or shrink the collapsed notch
+    }
+  }
+  Focus.onChange(refreshTimer);
+  setInterval(refreshTimer, 500);
+
+  function refreshBubble(m) {
+    const live = !!(m && m.enabled && (m.status === 'playing' || m.status === 'paused'));
+    bubble.classList.toggle('show', live);
+    bubble.classList.toggle('paused', live && m.status === 'paused');
+    bart.style.backgroundImage = live && m.art ? `url("${m.art}")` : '';
   }
 
   // ---------- eyes ----------
@@ -321,6 +370,7 @@
   window.mochi.onUsage((usage) => home.update({ usage }));
   window.mochi.onMusic((m) => {
     lastMusic = m;
+    refreshBubble(m);
     home.update({ music: m });
     music.update(m);
   });
