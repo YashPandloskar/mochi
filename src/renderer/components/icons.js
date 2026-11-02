@@ -14,6 +14,7 @@
     copy: wrap('<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>'),
     doc: wrap('<path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>'),
     play: wrap('<path d="M8 5.5v13l11-6.5z"/>', 'currentColor'),
+    camera: wrap('<path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>'),
     send: wrap('<path d="M12 19V5M5 12l7-7 7 7"/>'),
     stop: wrap('<rect x="6.5" y="6.5" width="11" height="11" rx="2"/>', 'currentColor'),
     prev: wrap('<path d="M18 5.5v13L8.5 12z"/><path d="M6 5.5v13"/>', 'currentColor'),

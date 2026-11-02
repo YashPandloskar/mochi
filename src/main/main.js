@@ -12,6 +12,7 @@ const GameMode = require('./gamemode');
 const notify = require('./notify');
 const BreakTimer = require('./breaks');
 const Chat = require('./chat');
+const screenshot = require('./screenshot');
 
 app.setName('mochi');
 // Windows toasts need an app identity; an unpackaged Electron app uses its own executable path.
@@ -124,7 +125,12 @@ app.whenReady().then(() => {
   // ---------- chat (Claude through your own Claude Code login) ----------
   const chat = new Chat();
   chat.on('event', (ev) => windowMgr.send('chat', ev));
-  ipcMain.on('chat:send', (_e, text) => typeof text === 'string' && chat.send(text));
+  ipcMain.on('chat:send', (_e, arg) => {
+    if (typeof arg === 'string') chat.send(arg);
+    else if (arg && typeof arg.text === 'string') chat.send(arg.text, arg.image);
+  });
+  // a screenshot is taken only when the camera button is pressed, and is never saved by mochi
+  ipcMain.handle('chat:capture', () => screenshot.capture(win));
   ipcMain.on('chat:stop', () => chat.stop());
   ipcMain.on('chat:new', () => chat.reset());
   ipcMain.on('window:focus', (_e, on) => windowMgr.setFocus(!!on));

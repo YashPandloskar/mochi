@@ -18,6 +18,13 @@ let input = '';
 process.stdin.setEncoding('utf8');
 process.stdin.on('data', (d) => (input += d));
 process.stdin.on('end', () => {
+  if (args.includes('--input-format')) {
+    // picture mode: one JSON line with an image block and a text block
+    const m = JSON.parse(input.trim());
+    const img = m.message.content.find((c) => c.type === 'image');
+    const txt = m.message.content.find((c) => c.type === 'text');
+    input = 'image(' + img.source.media_type + ',' + img.source.data.length + ') text=' + txt.text + ' format=' + flag('--input-format');
+  }
   const out = (o) => process.stdout.write(JSON.stringify(o) + '\\n');
   const sid = flag('--session-id') || flag('--resume');
   const mode = flag('--session-id') ? 'new' : 'resume';
@@ -78,6 +85,34 @@ const ok = (n) => console.log('  ok  ' + n) || passed++;
   const d3 = await until(chat, ['done']);
   assert.ok(d3.text.includes('echo(new)') && !d3.text.includes('sid=' + sid));
   ok('new chat forgets the conversation');
+
+  // a screenshot goes with the message
+  const pic = make();
+  pic.send('what is this error?', { data: 'QUJDRA==', mediaType: 'image/jpeg' });
+  const p1 = await until(pic, ['done', 'error']);
+  assert.strictEqual(p1.type, 'done');
+  assert.ok(p1.text.includes('image(image/jpeg,8) text=what is this error?'), p1.text);
+  assert.ok(p1.text.includes('format=stream-json'), 'picture messages use stream-json input');
+  assert.ok(p1.text.includes('echo(new)') && p1.text.includes('tools=""') && p1.text.includes('sources=""'), 'still a plain, tool-less chat');
+  ok('a picture is sent as an image block together with the text');
+
+  pic.send('and a follow-up without a picture');
+  const p2 = await until(pic, ['done', 'error']);
+  assert.ok(p2.text.includes('echo(resume)') && !p2.text.includes('image('), p2.text);
+  ok('the next plain message resumes the same conversation');
+
+  pic.send('', { data: 'QUJDRA==', mediaType: 'image/png' });
+  const p3 = await until(pic, ['done', 'error']);
+  assert.ok(p3.text.includes('image(image/png,8) text=' + theme.chat.screenPrompt), p3.text);
+  ok('a picture with no typed text asks to explain the screen');
+
+  const guard = make();
+  assert.strictEqual(guard.send('x', { data: 'QUJD', mediaType: 'image/gif' }), false);
+  assert.strictEqual(guard.send('x', { data: '', mediaType: 'image/png' }), false);
+  assert.strictEqual(guard.send('x', { data: 'A'.repeat(theme.chat.maxImageBytes + 1), mediaType: 'image/png' }), false);
+  assert.strictEqual(guard.send('x', { data: 12345, mediaType: 'image/png' }), false);
+  assert.strictEqual(guard.busy, false);
+  ok('only jpeg/png pictures within the size limit are accepted');
 
   // stop in the middle of an answer
   chat.send('SLOW please');

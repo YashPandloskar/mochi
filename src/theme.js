@@ -192,6 +192,8 @@ const theme = {
   // Chat tab: day-to-day questions to Claude, through your own Claude Code login (no API key).
   chat: {
     maxChars: 20000, // longest message you can send
+    maxImageBytes: 8_000_000, // largest picture (base64 characters) that can be attached
+    screenPrompt: 'Explain what is on my screen.', // used when you attach a screenshot and type nothing
     reopenMinutes: 10, // the notch reopens on Chat if you chatted this recently
     thinkingTimeoutSeconds: 120, // no output for this long and the request is stopped
     userBubble: 'rgba(224, 121, 58, 0.22)',
@@ -206,6 +208,7 @@ const theme = {
       { label: 'Plan my day', text: 'Help me plan my day. Here is what I need to do: ' },
       { label: 'Explain something simply', text: 'Explain this to me simply: ' },
       { label: 'Help me write a message', text: 'Help me write a message to ' },
+      { label: 'Explain my screen', text: 'Explain what is on my screen.', screen: true }, // also attaches a screenshot
     ],
   },
 

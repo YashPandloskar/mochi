@@ -29,15 +29,20 @@ class Chat extends EventEmitter {
     return fs.existsSync(local) ? local : 'claude';
   }
 
-  send(text) {
+  // image (optional): { data: base64, mediaType: 'image/jpeg' | 'image/png' }, e.g. a screenshot
+  send(text, image) {
     text = String(text || '').trim();
-    if (!text || this.busy || text.length > theme.chat.maxChars) return false;
+    const okImage = image && /^image\/(jpeg|png)$/.test(image.mediaType) && typeof image.data === 'string' && image.data.length > 0 && image.data.length <= theme.chat.maxImageBytes;
+    if (image && !okImage) return false;
+    if ((!text && !okImage) || this.busy || text.length > theme.chat.maxChars) return false;
+    if (okImage && !text) text = theme.chat.screenPrompt;
     fs.mkdirSync(this.cwd, { recursive: true });
     const first = !this.sessionId;
     if (first) this.sessionId = crypto.randomUUID();
     const args = [
       ...this.prefixArgs,
       '-p',
+      ...(okImage ? ['--input-format', 'stream-json'] : []),
       '--output-format', 'stream-json',
       '--verbose',
       '--include-partial-messages',
@@ -94,7 +99,15 @@ class Chat extends EventEmitter {
     proc.stderr.setEncoding('utf8');
     proc.stderr.on('data', (d) => (err += d));
     proc.stdin.on('error', () => {});
-    proc.stdin.end(text);
+    // With a picture the message goes as one JSON line (image block + text); otherwise as plain text.
+    proc.stdin.end(
+      okImage
+        ? JSON.stringify({
+            type: 'user',
+            message: { role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: image.mediaType, data: image.data } }, { type: 'text', text }] },
+          }) + '\n'
+        : text
+    );
 
     proc.on('error', (e) => {
       clearTimeout(timer);

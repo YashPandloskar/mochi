@@ -10,7 +10,8 @@ contextBridge.exposeInMainWorld('mochi', {
   musicCommand: (cmd) => ipcRenderer.send('music:command', cmd), // playpause | next | prev | open
   onSettings: (cb) => ipcRenderer.on('settings', (_e, s) => cb(s)),
   onChime: (cb) => ipcRenderer.on('chime', (_e, kind) => cb(kind)),
-  chatSend: (text) => ipcRenderer.send('chat:send', text),
+  chatSend: (text, image) => ipcRenderer.send('chat:send', image ? { text, image } : text),
+  captureScreen: () => ipcRenderer.invoke('chat:capture'), // only when you press the camera button
   chatStop: () => ipcRenderer.send('chat:stop'),
   chatNew: () => ipcRenderer.send('chat:new'),
   onChat: (cb) => ipcRenderer.on('chat', (_e, ev) => cb(ev)),

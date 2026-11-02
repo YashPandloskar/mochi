@@ -23,22 +23,75 @@
           <div class="chat-chips" data-r="chips"></div>
         </div>
       </div>
+      <div class="chat-attach" data-r="attach" hidden>
+        <img data-r="thumb" alt="Screenshot">
+        <span data-r="attachText">Screen attached</span>
+        <button class="chat-x" data-r="x" type="button" title="Remove the screenshot">✕</button>
+      </div>
       <div class="chat-input">
         <textarea data-r="ta" rows="1" maxlength="${C.maxChars}" placeholder="Ask Claude anything…"></textarea>
+        <button class="chat-cam" data-r="cam" type="button" title="Attach a screenshot of your screen"></button>
         <button class="chat-send" data-r="send" type="button" title="Send"></button>
       </div>`;
     const r = {};
     el.querySelectorAll('[data-r]').forEach((n) => (r[n.dataset.r] = n));
-    el.querySelector('.chat-empty-mochi').appendChild(Mochi.create({ mood: 'happy', size: 44 }).el);
+    el.querySelector('.chat-empty-mochi').appendChild(Mochi.create({ mood: 'happy', size: 36 }).el);
     el.appendChild(Nav.create().el);
 
     let busy = false;
+    let capturing = false;
+    let attached = null; // { base64, mediaType, url }: the screenshot that goes with the next message
     let inputFocused = false;
     let current = null; // the assistant message being filled in
     let acc = '';
     let hasMessages = false;
     let lastActive = 0;
     let renderTimer = null;
+
+    r.cam.innerHTML = Icons.camera(16);
+
+    // ---- screenshot: only taken when you press the camera button ----
+    let noteTimer = null;
+    function clearAttach() {
+      attached = null;
+      clearTimeout(noteTimer);
+      r.attach.hidden = true;
+      r.attach.classList.remove('warn');
+      r.thumb.hidden = false;
+      r.thumb.removeAttribute('src');
+      r.ta.placeholder = 'Ask Claude anything…';
+    }
+    function note(text) {
+      r.thumb.hidden = true;
+      r.attachText.textContent = text;
+      r.attach.classList.add('warn');
+      r.attach.hidden = false;
+      clearTimeout(noteTimer);
+      noteTimer = setTimeout(() => !attached && clearAttach(), 4500);
+    }
+    async function attachScreen() {
+      if (capturing || busy) return;
+      capturing = true;
+      r.cam.classList.add('busy');
+      onPinChange();
+      let res;
+      try {
+        res = await window.mochi.captureScreen();
+      } catch {
+        res = { error: 'Could not capture the screen.' };
+      }
+      capturing = false;
+      r.cam.classList.remove('busy');
+      if (!res || res.error) return note((res && res.error) || 'Could not capture the screen.');
+      attached = { base64: res.base64, mediaType: res.mediaType, url: `data:${res.mediaType};base64,${res.base64}` };
+      r.thumb.src = attached.url;
+      r.thumb.hidden = false;
+      r.attachText.textContent = res.black ? 'The screen looks black: some apps block screenshots' : 'Screen attached';
+      r.attach.classList.toggle('warn', !!res.black);
+      r.attach.hidden = false;
+      r.ta.placeholder = 'Ask about your screen, or just press Enter…';
+      onPinChange();
+    }
 
     const setSend = () => {
       r.send.innerHTML = busy ? Icons.stop(14) : Icons.send(16);
@@ -75,17 +128,26 @@
 
     function send(text) {
       text = (text || r.ta.value).trim();
-      if (!text || busy) return;
+      if ((!text && !attached) || busy || capturing) return;
+      const shown = text || C.screenPrompt; // a screenshot with no typed question asks to explain the screen
       lastActive = Date.now();
       const u = add('user');
-      u.textContent = text;
+      if (attached) {
+        const im = document.createElement('img');
+        im.className = 'msg-img';
+        im.src = attached.url;
+        u.appendChild(im);
+      }
+      u.appendChild(document.createTextNode(shown));
+      const image = attached ? { data: attached.base64, mediaType: attached.mediaType } : null;
+      clearAttach();
       r.ta.value = '';
       autosize();
       current = add('assistant');
       acc = '';
       paint();
       toBottom();
-      window.mochi.chatSend(text);
+      window.mochi.chatSend(shown, image);
     }
 
     function autosize() {
@@ -126,8 +188,13 @@
       }
     });
     r.send.addEventListener('click', () => (busy ? window.mochi.chatStop() : send()));
+    r.cam.addEventListener('click', attachScreen);
+    r.x.addEventListener('click', clearAttach);
     r.new.addEventListener('click', () => {
       window.mochi.chatNew();
+      clearAttach();
+      r.ta.value = '';
+      autosize();
       busy = false;
       current = null;
       hasMessages = false;
@@ -144,6 +211,7 @@
       b.className = 'chat-chip';
       b.textContent = s.label;
       b.addEventListener('click', () => {
+        if (s.screen) attachScreen();
         r.ta.value = s.text;
         autosize();
         window.mochi.focusWindow(true);
@@ -202,7 +270,7 @@
           onPinChange();
         }
       },
-      pinned: () => busy || inputFocused,
+      pinned: () => busy || capturing || inputFocused,
       recentlyActive: (minutes) => hasMessages && Date.now() - lastActive < minutes * 60000,
       onWindowBlur() {
         inputFocused = false;
