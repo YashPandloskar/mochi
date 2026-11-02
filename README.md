@@ -53,6 +53,21 @@ The tray icon (bottom right, maybe under the `^` arrow) has the settings. Leave 
 within about 100 seconds, or you answer in Claude Code's own prompt, mochi steps aside and Claude Code
 asks as usual. If mochi is not running the hooks do nothing at all, so Claude Code is never blocked.
 
+## The nav bar
+
+The pill at the bottom of the panel switches the view. Click an icon:
+
+| Tab | Shows |
+|---|---|
+| Home | Date, time and the Claude / Music / Focus tiles |
+| Claude | The live work panel (timer, step, diff, progress) or, when idle, your last job and its message |
+| Music | A bigger Apple Music player: art, title, artist, progress with times, previous / play-pause / next. The panel takes the album's colour |
+| Focus | The 25 minute countdown with a progress ring (shared with the Focus tile) |
+
+The panel opens on Home when idle and on Claude while a job runs or has just finished. Needs-you always
+takes over (it has no nav bar). The nav bar can be taken off the Working and Done panels with
+`nav.onPanels: false` in `src/theme.js` (they then go back to heights 200 and 214).
+
 ## Tray settings
 
 | Setting | What it does |
@@ -128,7 +143,7 @@ npm test
 ```
 src/theme.js          every colour, size, radius, timing, game list, motion option
 src/main/             window, tray, server, session state, usage, music, game mode, toasts
-src/renderer/         notch UI: components (Mochi, laptop scene, progress, chime) and views
+src/renderer/         notch UI: components (Mochi, laptop scene, nav, progress, focus, chime) and views
 hooks/                send-event.ps1 (hook script), statusline.js (plan usage capture)
 helpers/              media.ps1 (Apple Music), foreground.ps1 (active program name)
 scripts/              hooks.js (install/uninstall), fake-events.ps1, make-icon.js, self tests

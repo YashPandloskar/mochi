@@ -82,6 +82,9 @@
   let contentTimer = null;
   let greenTimer = null;
   let lastSession = null;
+  let lastMusic = null;
+  let tab = 'home'; // nav tab: home | claude | music | focus
+  let musicTint = null; // album colour for the Music panel gradient
   let motion = theme.motion; // "subtle" or "lively" (tray setting overrides the theme default)
   document.documentElement.dataset.motion = motion;
 
@@ -93,24 +96,56 @@
   const working = window.WorkingView.create();
   const done = window.DoneView.create();
   const needs = window.NeedsView.create();
+  const claudeIdle = window.ClaudeIdleView.create();
+  const music = window.MusicView.create({
+    onTint: (colour) => {
+      musicTint = colour;
+      if (expanded && viewKey() === 'music') applyGeometry();
+    },
+  });
+  const focus = window.FocusView.create();
+  const views = { home, working, done, needs, claudeIdle, music, focus };
 
-  content.append(home.el, working.el, done.el, needs.el);
+  content.append(...Object.values(views).map((v) => v.el));
+
+  // Which panel is showing: Needs-you always wins; otherwise the nav tab decides.
+  function viewKey() {
+    if (state === 'needs') return 'needs';
+    if (tab === 'claude') return state === 'working' ? 'working' : state === 'done' ? 'done' : 'claudeIdle';
+    return tab;
+  }
+
+  // The tab to start on when the notch opens or the state changes.
+  const defaultTab = () => (state === 'working' || state === 'done' ? 'claude' : 'home');
 
   function showView() {
-    const views = { idle: home.el, working: working.el, done: done.el, needs: needs.el };
-    for (const v of Object.values(views)) v.style.display = v === views[state] ? '' : 'none';
+    const key = viewKey();
+    for (const [k, v] of Object.entries(views)) v.el.style.display = k === key ? '' : 'none';
+    Nav.setActive(tab);
     if (lastSession) {
       working.update(lastSession);
       done.update(lastSession);
       needs.update(lastSession);
+      claudeIdle.update(lastSession);
     }
   }
 
   // Replays the entrance animation of whichever panel is showing.
   function playView() {
-    if (state === 'idle') home.rise();
-    else if (state === 'done') done.play();
+    const key = viewKey();
+    if (key === 'home') home.rise();
+    else if (key === 'done') done.play();
   }
+
+  // Tapping a nav icon switches the panel.
+  Nav.onSelect((id) => {
+    if (id === tab) return;
+    tab = id;
+    if (!expanded) return;
+    showView();
+    applyGeometry();
+    playView();
+  });
 
   // ---------- geometry ----------
   function turnGreen() {
@@ -119,14 +154,18 @@
 
   function applyGeometry() {
     if (expanded) {
-      const p = theme.panels[theme.panelForState[state]];
+      const key = viewKey();
+      const p = theme.panels[key];
+      const h = p.heightWithNav && theme.nav.onPanels ? p.heightWithNav : p.height;
+      const to = key === 'music' && musicTint ? musicTint : p.to;
       notch.style.width = theme.expanded.width + 'px';
-      notch.style.height = p.height + 'px';
+      notch.style.height = h + 'px';
       notch.style.borderRadius = radius(theme.expanded.radius);
       notch.style.background = 'transparent';
-      gradient.style.background = `linear-gradient(to bottom, ${p.from}, ${p.to})`;
+      gradient.style.background = `linear-gradient(to bottom, ${p.from}, ${to})`;
       if (p.fromAlt) gradientAlt.style.background = `linear-gradient(to bottom, ${p.fromAlt}, ${p.toAlt})`;
-      window.mochi.setHitSize({ w: theme.expanded.width, h: p.height });
+      notch.classList.toggle('is-done', key === 'done'); // the green crossfade belongs to the Done panel only
+      window.mochi.setHitSize({ w: theme.expanded.width, h });
     } else {
       notch.style.width = theme.collapsed.width + 'px';
       notch.style.height = theme.collapsed.height + 'px';
@@ -141,6 +180,7 @@
     if (expanded) return;
     clearTimeout(contentTimer);
     expanded = true;
+    tab = defaultTab();
     notch.classList.remove('content-visible');
     content.style.visibility = 'visible';
     showView();
@@ -227,12 +267,15 @@
   }
 
   function setState(next) {
-    if (!theme.panelForState[next]) return;
+    if (!['idle', 'working', 'needs', 'done'].includes(next)) return;
     const changed = next !== state;
     state = next;
     buildEyes();
 
     if (changed) {
+      // working/done show the Claude tab; back to idle returns to Home unless you picked Music or Focus
+      if (state === 'working' || state === 'done') tab = 'claude';
+      else if (state === 'idle' && tab === 'claude') tab = 'home';
       // Done starts blue and turns green on hover or after a few seconds.
       clearTimeout(greenTimer);
       notch.classList.remove('green');
@@ -264,6 +307,7 @@
     working.update(session);
     done.update(session);
     needs.update(session);
+    claudeIdle.update(session);
   });
   window.mochi.onSettings((s) => {
     if (s.motion && s.motion !== motion) {
@@ -274,7 +318,11 @@
   });
   window.mochi.onChime((kind) => window.Chime.play(kind));
   window.mochi.onUsage((usage) => home.update({ usage }));
-  window.mochi.onMusic((music) => home.update({ music }));
+  window.mochi.onMusic((m) => {
+    lastMusic = m;
+    home.update({ music: m });
+    music.update(m);
+  });
 
   content.style.visibility = 'hidden';
   applyGeometry();

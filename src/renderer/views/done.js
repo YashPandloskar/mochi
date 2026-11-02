@@ -32,6 +32,7 @@
     el.querySelector('.jumper').appendChild(mochi.el);
     const progress = Progress.create();
     el.appendChild(progress.el);
+    if (window.mochi.theme.nav.onPanels) el.appendChild(Nav.create().el);
     const confetti = el.querySelector('.confetti');
     const jumper = el.querySelector('.jumper');
 

@@ -63,16 +63,8 @@
           <div class="t-sub" data-r="focusSub">Ready to start</div>
         </button>
       </div>
-      <div class="nav">
-        <span class="nav-item active">${Icons.home(14)}<b>Home</b></span>
-        <span class="nav-item">${Icons.sparkle(14)}</span>
-        <span class="nav-item">${Icons.music(14)}</span>
-        <span class="nav-item">${Icons.chat(14)}</span>
-        <span class="nav-item">${Icons.timer(14)}</span>
-        <span class="nav-item">${Icons.inbox(14)}</span>
-        <span class="nav-item">${Icons.copy(14)}</span>
-        <span class="nav-item">${Icons.doc(14)}</span>
-      </div>`;
+      `;
+    el.appendChild(Nav.create().el);
 
     const r = {};
     el.querySelectorAll('[data-r]').forEach((n) => (r[n.dataset.r] = n));
@@ -85,11 +77,9 @@
       t.style.setProperty('--delay', H.rise.delaysMs[i] + 'ms');
     });
 
-    // ---------- Focus countdown (tap to start, tap again to reset) ----------
-    const focus = { endsAt: 0, showDoneUntil: 0 };
+    // ---------- Focus countdown (tap to start, tap again to reset; shared with the Focus tab) ----------
     r.focus.addEventListener('click', () => {
-      focus.endsAt = focus.endsAt ? 0 : Date.now() + H.focusMinutes * 60000;
-      focus.showDoneUntil = 0;
+      Focus.toggle();
       tick();
     });
 
@@ -170,27 +160,10 @@
       r.timer.textContent = clock(working ? (Date.now() - session.startedAt) / 1000 : 0);
       r.status.textContent = status();
 
-      if (focus.endsAt) {
-        const left = (focus.endsAt - Date.now()) / 1000;
-        if (left <= 0) {
-          focus.endsAt = 0;
-          focus.showDoneUntil = Date.now() + 8000;
-          window.mochi.focusDone(); // main plays the chime and shows the toast unless paused / in a game
-        } else {
-          r.focusTime.textContent = clock(left);
-          r.focusSub.textContent = `${Math.ceil(left / 60)} min left`;
-          r.focusBtn.innerHTML = Icons.stop(14);
-          return;
-        }
-      }
-      r.focusBtn.innerHTML = Icons.play(14);
-      if (Date.now() < focus.showDoneUntil) {
-        r.focusTime.textContent = '0:00';
-        r.focusSub.textContent = 'Time is up';
-      } else {
-        r.focusTime.textContent = `${H.focusMinutes}:00`;
-        r.focusSub.textContent = 'Ready to start';
-      }
+      const f = Focus.read();
+      r.focusBtn.innerHTML = f.running ? Icons.stop(14) : Icons.play(14);
+      r.focusTime.textContent = f.running ? clock(f.left) : f.finished ? '0:00' : clock(f.total);
+      r.focusSub.textContent = f.running ? `${Math.ceil(f.left / 60)} min left` : f.finished ? 'Time is up' : 'Ready to start';
     }
 
     setInterval(tick, 1000);

@@ -152,7 +152,11 @@ button.tile { cursor: pointer; }
   color: var(--nav-icon);
 }
 .nav-item.active { background: var(--nav-active); color: var(--text); padding: 0 10px; }
-.nav-item b { font-size: 11px; font-weight: 600; }
+.nav-item b { font-size: 11px; font-weight: 600; display: none; }
+.nav-item.active b { display: inline; }
+button.nav-item { border: 0; font: inherit; cursor: pointer; background: transparent; }
+button.nav-item.active { background: var(--nav-active); }
+button.nav-item:not(.active):hover { background: rgba(255, 255, 255, 0.08); color: var(--text); }
 
 /* music controls */
 .pill {

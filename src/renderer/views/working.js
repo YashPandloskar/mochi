@@ -31,6 +31,7 @@
     el.querySelector('.work-scene').appendChild(LaptopScene.create().el);
     const progress = Progress.create();
     el.appendChild(progress.el);
+    if (window.mochi.theme.nav.onPanels) el.appendChild(Nav.create().el);
 
     let session = null;
     let renderKey = '';

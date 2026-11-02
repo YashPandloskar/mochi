@@ -129,7 +129,6 @@ class SessionState extends EventEmitter {
     clearTimeout(s.doneTimer);
     s.doneTimer = setTimeout(() => {
       s.state = 'idle';
-      s.startedAt = null;
       this.emitChange();
     }, theme.timings.doneToIdleSeconds * 1000);
   }
@@ -221,7 +220,6 @@ class SessionState extends EventEmitter {
     clearTimeout(s.doneTimer);
     s.doneTimer = setTimeout(() => {
       s.state = 'idle';
-      s.startedAt = null;
       this.emitChange();
     }, theme.timings.doneToIdleSeconds * 1000);
     this.emitChange();

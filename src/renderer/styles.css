@@ -38,7 +38,7 @@ html, body {
 /* Done: the blue gradient crossfades to green (on hover, or after a few seconds) */
 .gradient-alt { transition: opacity var(--done-fade) linear; }
 #notch.expanded .gradient-alt { opacity: 0; }
-#notch.expanded.green .gradient-alt { opacity: 1; }
+#notch.expanded.green.is-done .gradient-alt { opacity: 1; }
 
 .content {
   position: absolute;

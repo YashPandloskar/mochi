@@ -28,16 +28,30 @@ const theme = {
     radius: [0, 0, 28, 28],
   },
 
-  // Which panel each notch state expands to.
-  panelForState: { idle: 'home', working: 'working', needs: 'needs', done: 'done' },
+  // The bottom nav bar switches between these views. Needs-you never has it (it must stay focused on the question).
+  nav: {
+    tabs: [
+      { id: 'home', label: 'Home', icon: 'home' },
+      { id: 'claude', label: 'Claude', icon: 'sparkle' },
+      { id: 'music', label: 'Music', icon: 'music' },
+      { id: 'focus', label: 'Focus', icon: 'timer' },
+    ],
+    // Show the nav bar under the Working and Done panels too (they then use heightWithNav).
+    onPanels: true,
+  },
 
   // Expanded panel heights and vertical gradients (top to bottom).
+  // heightWithNav is used when nav.onPanels is true.
   panels: {
     home: { height: 222, from: '#040404', to: '#17140f' },
-    working: { height: 200, from: '#0b0604', to: '#4a2410' },
+    working: { height: 200, heightWithNav: 240, from: '#0b0604', to: '#4a2410' },
+    claudeIdle: { height: 200, heightWithNav: 240, from: '#0b0604', to: '#4a2410' },
+    music: { height: 232, from: '#040404', to: '#4a1824' }, // `to` is replaced by the album colour when there is art
+    focus: { height: 222, from: '#07040f', to: '#3b1d6e' },
     needs: { height: 176, from: '#0b0803', to: '#4a3309' },
     done: {
       height: 214,
+      heightWithNav: 252,
       from: '#040916',
       to: '#1b4fc4',
       // crossfades to this on hover or after doneTurnGreenAfter seconds
