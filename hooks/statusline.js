@@ -38,6 +38,12 @@ const raw = readStdin();
 try {
   const data = JSON.parse(raw);
   const rl = data && data.rate_limits;
+  // Diagnostics only: when this ran and which top-level field names arrived (never values).
+  fs.mkdirSync(dir, { recursive: true });
+  atomicWrite(
+    path.join(dir, 'statusline-seen.json'),
+    JSON.stringify({ at: new Date().toISOString(), keys: Object.keys(data || {}), hasRateLimits: !!rl, rateLimitKeys: rl ? Object.keys(rl) : [] })
+  );
   if (rl) {
     const fiveHour = windowOf(rl.five_hour);
     const sevenDay = windowOf(rl.seven_day);
