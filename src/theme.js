@@ -43,6 +43,7 @@ const theme = {
       { id: 'claude', label: 'Claude', icon: 'sparkle' },
       { id: 'music', label: 'Music', icon: 'music' },
       { id: 'focus', label: 'Focus', icon: 'timer' },
+      { id: 'notes', label: 'Notes', icon: 'checklist' },
       { id: 'chat', label: 'Chat', icon: 'chat' },
     ],
     // Show the nav bar under the Working and Done panels too (they then use heightWithNav).
@@ -52,7 +53,8 @@ const theme = {
   // Expanded panel heights and vertical gradients (top to bottom).
   // heightWithNav is used when nav.onPanels is true.
   panels: {
-    home: { height: 222, from: '#040404', to: '#17140f' },
+    home: { height: 266, from: '#040404', to: '#17140f' }, // tiles, notes strip, nav
+    notes: { height: 300, from: '#07070a', to: '#211b0b' },
     working: { height: 200, heightWithNav: 240, from: '#0b0604', to: '#4a2410' },
     claudeIdle: { height: 200, heightWithNav: 240, from: '#0b0604', to: '#4a2410' },
     music: { height: 232, from: '#040404', to: '#4a1824' }, // `to` is replaced by the album colour when there is art
@@ -198,6 +200,15 @@ const theme = {
     appMatch: 'AppleMusic', // matched against each media session's app id
     appId: 'AppleInc.AppleMusicWin_nzyj5cx40ttqa!App', // used by "Open Apple Music"
     restartSeconds: 5, // helper restart delay if it dies
+  },
+
+  // Notes tab and the strip on Home: to-do and a quick note, kept in a Markdown file you can also edit yourself.
+  notes: {
+    stripHeight: 34,
+    accent: '#ffd07a',
+    saveDelayMs: 400, // the note is saved this long after you stop typing
+    placeholderTask: 'Add a task…',
+    placeholderNote: 'Jot something down…',
   },
 
   // Chat tab: day-to-day questions to Claude, through your own Claude Code login (no API key).

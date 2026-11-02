@@ -31,6 +31,7 @@
   window.Nav = {
     create,
     onSelect: (fn) => (handler = fn),
+    go: (id) => handler(id), // switch tab from code (e.g. the notes strip on Home)
     setActive(id) {
       active = id;
       instances.forEach((i) => i.set(id));

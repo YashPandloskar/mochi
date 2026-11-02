@@ -158,7 +158,12 @@
       if (!chatView.pinned() && !hover) scheduleCollapse();
     },
   });
-  const views = { home, working, done, needs, claudeIdle, music, focus, break: brk, chat: chatView };
+  const notesView = window.NotesView.create();
+  // any watched text box (Notes) keeps the panel open while you type
+  Typing.onPinChange(() => {
+    if (!Typing.pinned() && !chatView.pinned() && !hover) scheduleCollapse();
+  });
+  const views = { home, working, done, needs, claudeIdle, music, focus, notes: notesView, break: brk, chat: chatView };
 
   content.append(...Object.values(views).map((v) => v.el));
 
@@ -275,7 +280,7 @@
   function scheduleCollapse() {
     clearTimeout(collapseTimer);
     collapseTimer = setTimeout(() => {
-      if (!hover && !autoOpens() && !chatView.pinned()) collapse();
+      if (!hover && !autoOpens() && !chatView.pinned() && !Typing.pinned()) collapse();
     }, ms(theme.timings.collapseDelay));
   }
 
@@ -489,7 +494,14 @@
     poke();
     chatView.handle(ev);
   });
-  window.mochi.onWindowBlur(() => chatView.onWindowBlur());
+  window.mochi.onWindowBlur(() => {
+    chatView.onWindowBlur();
+    Typing.reset();
+  });
+  window.mochi.onNotes((d) => {
+    notesView.update(d);
+    home.update({ notes: d });
+  });
 
   content.style.visibility = 'hidden';
   applyGeometry();

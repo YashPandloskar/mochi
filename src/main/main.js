@@ -1,4 +1,4 @@
-const { app, ipcMain, globalShortcut } = require('electron');
+const { app, ipcMain, globalShortcut, shell } = require('electron');
 const path = require('path');
 const theme = require('../theme');
 const config = require('./config');
@@ -13,6 +13,7 @@ const notify = require('./notify');
 const BreakTimer = require('./breaks');
 const Chat = require('./chat');
 const screenshot = require('./screenshot');
+const Notes = require('./notes');
 
 app.setName('mochi');
 // Windows toasts need an app identity; an unpackaged Electron app uses its own executable path.
@@ -130,8 +131,34 @@ app.whenReady().then(() => {
     windowMgr.send('session', snap);
     if (usage.current) windowMgr.send('usage', usage.current);
     windowMgr.send('music', music.current);
+    pushNotes();
     pushSettings();
   });
+
+  // ---------- notes and to-do: one Markdown file, also editable outside mochi ----------
+  // MOCHI_NOTES_FILE lets a test copy use a scratch file instead of your real notes
+  const notes = new Notes({ file: process.env.MOCHI_NOTES_FILE || cfg.notesFile || path.join(config.configDir(), 'notes.md') });
+  let notesData = { todos: [], note: '' };
+  try {
+    notesData = notes.load();
+  } catch (e) {
+    console.error('notes:', e.message); // unreadable file: start empty, never crash
+  }
+  const pushNotes = () => windowMgr.send('notes', { ...notesData, file: notes.file });
+  notes.on('external', (d) => {
+    notesData = d;
+    pushNotes();
+  });
+  notes.watch();
+  ipcMain.on('notes:save', (_e, data) => {
+    try {
+      notes.save(data);
+      notesData = Notes.clean(data);
+    } catch (e) {
+      console.error('notes save:', e.message);
+    }
+  });
+  ipcMain.on('notes:open', () => shell.openPath(notes.file));
 
   // ---------- chat (Claude through your own Claude Code login) ----------
   const chat = new Chat();
@@ -250,6 +277,7 @@ app.whenReady().then(() => {
     globalShortcut.unregisterAll();
     music.stop();
     chat.reset();
+    notes.stop();
     breaks.stop();
     game.stop();
     usage.stop();

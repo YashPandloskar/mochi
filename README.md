@@ -62,12 +62,36 @@ The pill at the bottom of the panel switches the view. Click an icon:
 | Home | Date, time and the Claude / Music / Focus tiles |
 | Claude | The live work panel (timer, step, diff, progress) or, when idle, your last job and its message |
 | Music | A bigger Apple Music player: art, title, artist, progress with times, previous / play-pause / next. The panel takes the album's colour |
+| Notes | A to-do list and a quick note, kept in a Markdown file (see "Notes and to-do" below) |
 | Chat | Day-to-day questions to Claude: plan something, explain something, draft a message (see below) |
 | Focus | A Pomodoro timer with a progress ring: **25 minutes of focus, then a 5 minute break, then focus again**, until you press Reset. **− / +** change the focus length (5 to 120, steps of 5) and the break length (1 to 30). **Cycle** turns the repeating off for a single timer. Each finished focus period counts as a session; today's count is shown on the tile and the tab and is remembered for the day. A soft chime and a toast mark every switch (a falling tune for "break", a rising one for "back to focus"). The collapsed notch widens with a ring and the time (green during a break). Lengths are locked while counting. Defaults: `home.focusMinutes`, `home.breakMinutes`, `home.cycle` in `src/theme.js` |
 
 The panel opens on Home when idle and on Claude while a job runs or has just finished. Needs-you always
 takes over (it has no nav bar). The nav bar can be taken off the Working and Done panels with
 `nav.onPanels: false` in `src/theme.js` (they then go back to heights 200 and 214).
+
+## Notes and to-do
+
+The **Notes** tab (checklist icon) has a to-do list on the left and a quick note on the right. A strip under the Home tiles shows how far you are ("To-do · 2 of 5") and your next task; click it to open the tab.
+
+- **Tasks:** type in "Add a task…" and press Enter. Click the box to tick a task, double-click its text to rename it (an emptied task is deleted), use the ✕ to delete, and **Clear done** removes the ticked ones.
+- **Quick note:** just type; it is saved a moment after you stop.
+- **It is a plain file:** `%APPDATA%\mochi\notes.md`. **Open file** opens it in your editor, and changes made there appear in the notch within a second. The format is simple:
+
+  ```
+  # mochi notes
+
+  ## To-do
+  - [ ] buy milk
+  - [x] send the report
+
+  ## Note
+  anything you like
+  ```
+
+  Other bullet styles (`- task`, `* [x] task`, `[ ] task`) and headings called Tasks / Notes also work. Anything you write under `## Note` is kept as the note. Change the file's location with `notesFile` in `%APPDATA%\mochi\config.json`.
+- **Keyboard focus:** like Chat, the notch takes keyboard focus only while you click into a text box, gives it back on **Esc**, and stays open while you type. Nothing leaves your computer.
+- Limits: 200 tasks, 500 characters per task, 50,000 characters of note.
 
 ## Chat
 

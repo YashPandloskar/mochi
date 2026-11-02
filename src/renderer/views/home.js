@@ -63,6 +63,12 @@
           <div class="t-sub" data-r="focusSub">Ready to start</div>
         </button>
       </div>
+      <button class="notes-strip" data-r="notes" type="button" title="Open Notes">
+        <span class="ns-icon">${Icons.checklist(14)}</span>
+        <span class="ns-title" data-r="notesTitle">To-do</span>
+        <span class="ns-next" data-r="notesNext">Add a task or jot a note</span>
+        <span class="ns-go">${Icons.chevron(13)}</span>
+      </button>
       `;
     el.appendChild(Nav.create().el);
 
@@ -96,6 +102,17 @@
     r.next.addEventListener('click', () => send('next'));
     r.open.addEventListener('click', () => send('open'));
     r.art.addEventListener('click', () => send('open'));
+
+    // ---------- Notes strip: how far the to-do list is, and what is next ----------
+    r.notes.addEventListener('click', () => Nav.go('notes'));
+    function renderNotes(d) {
+      const todos = (d && d.todos) || [];
+      const done = todos.filter((t) => t.done).length;
+      const next = todos.find((t) => !t.done);
+      r.notesTitle.textContent = todos.length ? 'To-do · ' + done + ' of ' + todos.length : 'To-do';
+      r.notesNext.textContent = next ? next.text : todos.length ? 'All done' : d && d.note ? 'A note is saved' : 'Add a task or jot a note';
+      r.notes.classList.toggle('all-done', !!todos.length && !next);
+    }
 
     function renderMusic(m) {
       const live = m && m.enabled && m.status && m.status !== 'none';
@@ -186,6 +203,7 @@
         if (next.session) session = next.session;
         if (next.usage) usage = next.usage;
         if (next.music) renderMusic(next.music);
+        if (next.notes) renderNotes(next.notes);
         renderUsage();
         tick();
       },
