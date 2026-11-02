@@ -92,7 +92,10 @@ const theme = {
     sparkleSpinSeconds: 8,
     playBreatheSeconds: 2,
     equaliserSeconds: [0.9, 1.1, 0.7],
-    focusMinutes: 25,
+    focusMinutes: 25, // default; change it in the Focus tab (remembered) or here
+    focusStepMinutes: 5, // the Focus tab's - and + buttons
+    focusMinMinutes: 5,
+    focusMaxMinutes: 120,
     nav: { height: 30, background: 'rgba(255, 255, 255, 0.07)', activeBackground: 'rgba(255, 255, 255, 0.12)', icon: 'rgba(244, 241, 236, 0.55)' },
   },
 

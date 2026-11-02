@@ -31,6 +31,7 @@ app.whenReady().then(() => {
     music: cfg.music,
     startup: app.getLoginItemSettings().openAtLogin,
     motion: cfg.motion || theme.motion,
+    focusMinutes: cfg.focusMinutes,
     monitor: cfg.monitor,
   };
 
@@ -88,7 +89,7 @@ app.whenReady().then(() => {
   usage.on('change', (u) => windowMgr.send('usage', u));
   music.on('change', (m) => windowMgr.send('music', m));
 
-  const pushSettings = () => windowMgr.send('settings', { motion: settings.motion, sounds: settings.sounds });
+  const pushSettings = () => windowMgr.send('settings', { motion: settings.motion, sounds: settings.sounds, focusMinutes: settings.focusMinutes });
   win.webContents.on('did-finish-load', () => {
     const snap = state.snapshot();
     windowMgr.send('state', snap.state);
@@ -105,6 +106,12 @@ app.whenReady().then(() => {
     if (decision !== 'allow' && decision !== 'deny') return;
     if (id === -1) state.preview(null);
     else state.resolve(id, decision);
+  });
+  ipcMain.on('focus:minutes', (_e, m) => {
+    const min = Math.round(Number(m));
+    if (!(min >= theme.home.focusMinMinutes && min <= theme.home.focusMaxMinutes)) return;
+    settings.focusMinutes = min;
+    config.update({ focusMinutes: min });
   });
   ipcMain.on('focus:done', () => {
     if (quiet()) return;

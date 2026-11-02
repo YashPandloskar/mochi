@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('mochi', {
   musicCommand: (cmd) => ipcRenderer.send('music:command', cmd), // playpause | next | prev | open
   onSettings: (cb) => ipcRenderer.on('settings', (_e, s) => cb(s)),
   onChime: (cb) => ipcRenderer.on('chime', (_e, kind) => cb(kind)),
+  setFocusMinutes: (m) => ipcRenderer.send('focus:minutes', m),
   focusDone: () => ipcRenderer.send('focus:done'),
   resolveApproval: (id, decision) => ipcRenderer.send('approval:resolve', { id, decision }),
   onSession: (cb) => ipcRenderer.on('session', (_e, snap) => cb(snap)),

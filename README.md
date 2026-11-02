@@ -62,7 +62,7 @@ The pill at the bottom of the panel switches the view. Click an icon:
 | Home | Date, time and the Claude / Music / Focus tiles |
 | Claude | The live work panel (timer, step, diff, progress) or, when idle, your last job and its message |
 | Music | A bigger Apple Music player: art, title, artist, progress with times, previous / play-pause / next. The panel takes the album's colour |
-| Focus | The 25 minute countdown with a progress ring (shared with the Focus tile) |
+| Focus | The countdown with a progress ring (shared with the Focus tile). **− / +** change the length in 5 minute steps (5 to 120, remembered); locked while counting. Default 25: `home.focusMinutes` in `src/theme.js` |
 
 The panel opens on Home when idle and on Claude while a job runs or has just finished. Needs-you always
 takes over (it has no nav bar). The nav bar can be taken off the Working and Done panels with

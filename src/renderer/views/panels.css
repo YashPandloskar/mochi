@@ -239,3 +239,9 @@
   font-weight: 650;
   cursor: pointer;
 }
+
+.fv-steps { display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 12px; font-variant-numeric: tabular-nums; }
+.fv-steps span { min-width: 44px; text-align: center; color: var(--text); }
+.fv-step { width: 24px; height: 24px; padding: 0; border: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.14); color: var(--text); font: inherit; font-size: 15px; line-height: 1; cursor: pointer; }
+.fv-step:hover { background: rgba(255, 255, 255, 0.24); }
+.fv-steps.locked { opacity: 0.35; pointer-events: none; }

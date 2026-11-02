@@ -310,6 +310,7 @@
     claudeIdle.update(session);
   });
   window.mochi.onSettings((s) => {
+    if (s.focusMinutes) Focus.setMinutes(s.focusMinutes, false);
     if (s.motion && s.motion !== motion) {
       motion = s.motion;
       document.documentElement.dataset.motion = motion;

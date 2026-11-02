@@ -2,7 +2,9 @@
 // another tap resets it. When it reaches zero, main plays the chime and shows the toast.
 //   Focus.toggle()   Focus.read() -> { running, left (s), total (s), finished }
 (() => {
-  const total = window.mochi.theme.home.focusMinutes * 60;
+  const H = window.mochi.theme.home;
+  let minutes = H.focusMinutes;
+  let total = minutes * 60;
   let endsAt = 0;
   let finishedUntil = 0;
 
@@ -16,7 +18,19 @@
   setInterval(check, 500); // keeps counting even while the notch is collapsed
 
   window.Focus = {
-    total,
+    get minutes() { return minutes; },
+    // Changes the length (not while counting). persist=false when the value came from the saved setting.
+    setMinutes(m, persist = true) {
+      m = Math.max(H.focusMinMinutes, Math.min(H.focusMaxMinutes, Math.round(Number(m) || minutes)));
+      if (endsAt || m === minutes) return false;
+      minutes = m;
+      total = m * 60;
+      if (persist) window.mochi.setFocusMinutes(m);
+      return true;
+    },
+    step(dir) {
+      return this.setMinutes(minutes + dir * H.focusStepMinutes);
+    },
     toggle() {
       endsAt = endsAt ? 0 : Date.now() + total * 1000;
       finishedUntil = 0;

@@ -21,12 +21,20 @@
         <div class="fv-side">
           <div class="fv-label">Focus</div>
           <div class="fv-sub" data-r="sub">Ready to start</div>
+          <div class="fv-steps" data-r="steps">
+            <button class="fv-step" data-r="minus" type="button" title="Shorter">−</button>
+            <span data-r="mins">25 min</span>
+            <button class="fv-step" data-r="plus" type="button" title="Longer">+</button>
+          </div>
           <button class="fv-go" data-r="go" type="button">${Icons.play(14)}<span>Start</span></button>
         </div>
       </div>`;
     const r = {};
     el.querySelectorAll('[data-r]').forEach((n) => (r[n.dataset.r] = n));
     el.appendChild(Nav.create().el);
+
+    r.minus.addEventListener('click', () => (Focus.step(-1), tick()));
+    r.plus.addEventListener('click', () => (Focus.step(1), tick()));
 
     r.go.addEventListener('click', () => {
       Focus.toggle();
@@ -38,6 +46,8 @@
       r.time.textContent = f.running ? clock(f.left) : f.finished ? '0:00' : clock(f.total);
       r.sub.textContent = f.running ? `${Math.ceil(f.left / 60)} min left` : f.finished ? 'Time is up' : 'Ready to start';
       r.go.innerHTML = (f.running ? Icons.stop(14) : Icons.play(14)) + `<span>${f.running ? 'Reset' : 'Start'}</span>`;
+      r.mins.textContent = `${Focus.minutes} min`;
+      r.steps.classList.toggle('locked', f.running); // the length cannot change while counting
       const used = f.running ? 1 - f.left / f.total : 0;
       r.arc.style.strokeDashoffset = String((C * used).toFixed(2));
     }
