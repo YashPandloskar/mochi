@@ -8,7 +8,9 @@ const STATES = [
   ['Done', 'done'],
 ];
 
-function create({ onPreview, onResolve }) {
+const MOODS = ['wink', 'focus', 'curious', 'happy', 'dizzy'];
+
+function create({ onPreview, onResolve, onMood }) {
   const icon = nativeImage.createFromPath(path.join(__dirname, '..', '..', 'assets', 'tray.png'));
   const tray = new Tray(icon);
   tray.setToolTip('mochi');
@@ -27,6 +29,7 @@ function create({ onPreview, onResolve }) {
     }
     items.push(
       { label: 'Preview state', submenu: STATES.map(([label, id]) => ({ label, click: () => onPreview(id) })) },
+      { label: 'Preview Mochi mood', submenu: MOODS.map((m) => ({ label: m, click: () => onMood(m) })) },
       { type: 'separator' },
       { label: 'Quit mochi', click: () => app.quit() }
     );

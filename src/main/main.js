@@ -25,6 +25,7 @@ app.whenReady().then(() => {
   const trayIcon = tray.create({
     onPreview: (s) => state.preview(s),
     onResolve: (id, decision) => state.resolve(id, decision),
+    onMood: (m) => windowMgr.send('mood', m),
   });
 
   state.on('change', (snap) => {

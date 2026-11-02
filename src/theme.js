@@ -64,6 +64,26 @@ const theme = {
     testCommand: '\\b(npm|pnpm|yarn|bun)\\s+(run\\s+)?t(est)?\\b|\\b(jest|vitest|pytest|mocha|phpunit|rspec|ctest)\\b|\\b(go|cargo|dotnet|gradle|mvn)\\s+test\\b',
   },
 
+  // The Mochi character (src/renderer/components/mochi.js). Every screen uses the same drawing.
+  mochi: {
+    body: '#fffaf2',
+    bodyStroke: '#e5dccb',
+    bodyStrokeWidth: 1.5,
+    cheek: '#f6b3ae',
+    cheekOpacity: 0.8,
+    ink: '#2b2824',
+    highlight: '#ffffff',
+    gold: '#f5c542',
+    strokeWidth: 2,
+    blinkSeconds: 4, // eyes close for a moment every ~4s
+    blinkClosed: 0.1, // scaleY while blinking
+    sparkleSeconds: 1.8,
+    squish: { x: 1.15, y: 0.85, ms: 380, easing: 'cubic-bezier(.34,1.5,.5,1)' }, // on entering a mood
+    dizzy: { clicks: 4, windowMs: 1500, durationMs: 2000, shakeDeg: 7, shakeMs: 240 },
+    // which mood each notch state uses where a single Mochi is shown
+    moodByState: { idle: 'wink', working: 'focus', needs: 'curious', done: 'happy' },
+  },
+
   // Collapsed-state eyes. Colour and shape follow the state.
   eyes: {
     gap: 16,

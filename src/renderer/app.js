@@ -44,9 +44,19 @@
     }
   }
 
+  // Placeholder panel body until the real views arrive: one Mochi, mood follows the state.
+  const mochi = window.Mochi.create({ mood: theme.mochi.moodByState.idle, size: 72 });
+  const caption = document.createElement('div');
+  const stack = document.createElement('div');
+  stack.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:10px';
+  stack.append(mochi.el, caption);
+  content.appendChild(stack);
+
   function setContent() {
-    content.textContent = expanded ? `${state}  (panel arrives in a later stage)` : '';
+    caption.textContent = `${state}  (panel arrives in a later stage)`;
+    mochi.setMood(moodOverride || theme.mochi.moodByState[state]);
   }
+  let moodOverride = null;
 
   // Expand: resize first, then fade the content in. Collapse: fade out, then resize.
   function expand() {
@@ -134,7 +144,15 @@
     if (inside) expand();
     else collapseTimer = setTimeout(() => !hover && collapse(), ms(theme.timings.collapseDelay));
   });
-  window.mochi.onState(setState);
+  window.mochi.onState((s) => {
+    moodOverride = null;
+    setState(s);
+    setContent();
+  });
+  window.mochi.onMood((m) => {
+    moodOverride = m;
+    mochi.setMood(m);
+  });
 
   applyGeometry();
   buildEyes();
