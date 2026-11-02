@@ -113,6 +113,22 @@
     stream: streamDest ? streamDest.stream : null,
     resume: () => (RENDER ? Promise.resolve() : ctx.resume()),
     now: () => (RENDER ? window.__film.T || 0 : ctx.currentTime), // the frame being rendered, in audio time
+    // a warm, slow swell: a few chord tones fade up over about two seconds and ring out
+    bloom(t) {
+      [57, 64, 69, 72, 76].forEach((m, i) => {
+        const o = ctx.createOscillator();
+        o.type = 'sine';
+        o.frequency.value = hz(m);
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, t + i * 0.12);
+        g.gain.exponentialRampToValueAtTime(0.03, t + 1.9 + i * 0.12);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 6.5);
+        o.connect(g);
+        route(g, { dry: 0.8, rev: 0.7 });
+        o.start(t + i * 0.12);
+        o.stop(t + 6.6);
+      });
+    },
     // Mochi dozing off: a few soft notes sinking; and waking: the same notes lifting
     lullaby(t, up = false) {
       const notes = up ? [67, 72, 76, 79] : [79, 74, 70, 67];
@@ -339,7 +355,7 @@
   ];
   // [from second, level]: 0 pad only; 1 + bass; 2 + arp; 3 + beat; 4 beat + fuller arp; 5 soft (no beat); 6 clock; 7 sparse
   const SECTIONS = [
-    [0, 0], [5, 1], [10, 2], [20, 3], [28, 4], [42, 5], [51, 6], [62, 5], [70, 3], [81, 7], [90, 8],
+    [0, 0], [7.5, 1], [10, 2], [20, 3], [28, 4], [42, 5], [51, 6], [62, 5], [70, 3], [81, 7], [90, 8],
   ];
   const levelAt = (t) => SECTIONS.reduce((l, [from, lv]) => (t >= from ? lv : l), 0);
 

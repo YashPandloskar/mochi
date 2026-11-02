@@ -104,7 +104,7 @@
     },
     error: (e) => LOG('VIDEO ENCODER ERROR ' + e.message),
   });
-  venc.configure({ codec: 'avc1.640032', width: W, height: H, bitrate: 26_000_000, framerate: FPS, latencyMode: 'quality', avc: { format: 'avc' }, hardwareAcceleration: 'prefer-hardware' });
+  venc.configure({ codec: 'avc1.640032', width: W, height: H, bitrate: 36_000_000, framerate: FPS, latencyMode: 'quality', avc: { format: 'avc' }, hardwareAcceleration: 'prefer-hardware' });
 
   async function main() {
     const started = performance.now();

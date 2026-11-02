@@ -110,7 +110,7 @@
     const s = cam.s * (1 + (h.s - 1) * swayAmt);
     const tx = 960 - cam.x * s + shake.x + h.x * swayAmt;
     const ty = 540 - cam.y * s + shake.y + h.y * swayAmt;
-    world.style.transform = `translate(960px, 540px) rotate(${(h.r * swayAmt).toFixed(3)}deg) translate(-960px, -540px) translate3d(${tx.toFixed(2)}px, ${ty.toFixed(2)}px, 0) scale(${s.toFixed(5)})`;
+    world.style.transform = `translate(960px, 540px) rotate(${(h.r * swayAmt).toFixed(3)}deg) translate(-960px, -540px) translate(${tx.toFixed(2)}px, ${ty.toFixed(2)}px) scale(${s.toFixed(5)})`;
     const speed = Math.abs(Math.log(cam.s / prev.s)) * 230 + (Math.hypot(cam.x - prev.x, cam.y - prev.y) * cam.s) / 20;
     const blur = Math.min(5.2, Math.max(0, speed - 1.0));
     world.style.filter = blur > 0.25 ? `blur(${blur.toFixed(2)}px)` : '';
@@ -156,7 +156,15 @@
   // ------------------------------------------------------------ cursor, clicks, highlights
   const cur = { x: 1700, y: 300 };
   let curScale = 1;
-  const placeCursor = () => (cursorEl.style.transform = `translate(${cur.x.toFixed(1)}px, ${cur.y.toFixed(1)}px) scale(${curScale})`);
+  let rippleUntil = 0;
+  const placeCursor = () => {
+    cursorEl.style.transform = `translate(${cur.x.toFixed(1)}px, ${cur.y.toFixed(1)}px) scale(${curScale})`;
+    if (now() < rippleUntil) {
+      // the click ring stays under the pointer while the button it pressed slides into place
+      ripple.style.left = cur.x + 'px';
+      ripple.style.top = cur.y + 'px';
+    }
+  };
   function cursorShow(on, dur = 0.35) {
     cursorEl.style.transition = `opacity ${dur}s`;
     cursorEl.style.opacity = on ? 1 : 0;
@@ -195,6 +203,39 @@
       });
     }
   }
+  // like cursorTo, but the destination is a function read on every frame, so it can follow a moving target
+  async function cursorToLive(getTarget, dur = 1, ease = E.hand) {
+    const a = { ...cur };
+    const t0p = getTarget();
+    const len = Math.max(1, Math.hypot(t0p.x - a.x, t0p.y - a.y));
+    const d = dur * (0.88 + rnd() * 0.3);
+    const bow = (rnd() > 0.5 ? 1 : -1) * Math.min(70, len * (0.06 + rnd() * 0.1));
+    const ph = rnd() * 6;
+    await tween(d, ease, (p) => {
+      const t = getTarget();
+      const dx = t.x - a.x;
+      const dy = t.y - a.y;
+      const l = Math.max(1, Math.hypot(dx, dy));
+      const arc = Math.sin(p * Math.PI) * bow;
+      const tremor = Math.sin(p * 40 + ph) * 0.7 * Math.sin(p * Math.PI);
+      cur.x = a.x + dx * p + (-dy / l) * (arc + tremor);
+      cur.y = a.y + dy * p + (dx / l) * (arc + tremor * 0.8);
+      if (p >= 1) {
+        cur.x = t.x;
+        cur.y = t.y;
+      }
+      placeCursor();
+    });
+  }
+  // stay on a (possibly moving) target for a while
+  function follow(getTarget, secs) {
+    return tween(secs, E.lin, () => {
+      const t = getTarget();
+      cur.x = t.x;
+      cur.y = t.y;
+      placeCursor();
+    });
+  }
   function worldOf(el, ax = 0.5, ay = 0.5) {
     const r = el.getBoundingClientRect();
     const f = frame.getBoundingClientRect();
@@ -204,7 +245,8 @@
   function pressFx() {
     ripple.style.left = cur.x + 'px';
     ripple.style.top = cur.y + 'px';
-    ripple.animate([{ opacity: 0.9, transform: 'scale(0.6)' }, { opacity: 0, transform: 'scale(4.6)' }], { duration: 560, easing: 'cubic-bezier(.2,.7,.3,1)' });
+    rippleUntil = now() + 0.45;
+    ripple.animate([{ opacity: 0.9, transform: 'scale(0.6)' }, { opacity: 0, transform: 'scale(3.4)' }], { duration: 420, easing: 'cubic-bezier(.2,.7,.3,1)' });
     tween(0.2, E.lin, (p) => {
       curScale = 1 - 0.18 * Math.sin(p * Math.PI);
       placeCursor();
@@ -212,14 +254,35 @@
     S.tap(S.now() + 0.005);
   }
   async function pointAndClick(el, { dur = 0.9, then = null, ax = 0.5, ay = 0.5 } = {}) {
-    const p = worldOf(el, ax, ay);
-    // aim at a point on the target that is not quite its centre
-    await cursorTo(p.x + (rnd() - 0.5) * 8, p.y + (rnd() - 0.5) * 5, dur);
-    await wait(0.1 + rnd() * 0.2); // a beat of hesitation before pressing
+    // The target is re-measured on every frame: panels are still springing open or settling while the pointer
+    // travels, so a position measured at the start would be off by the time it lands.
+    const r0 = el.getBoundingClientRect();
+    const k0 = frame.getBoundingClientRect().width / 600;
+    const jx = (rnd() - 0.5) * 0.2 * (r0.width / k0); // aim a little off-centre, but always inside the target
+    const jy = (rnd() - 0.5) * 0.2 * (r0.height / k0);
+    const target = () => {
+      const p = worldOf(el, ax, ay);
+      return { x: p.x + jx, y: p.y + jy };
+    };
+    await cursorToLive(target, dur);
+    await follow(target, 0.1 + rnd() * 0.2); // a beat of hesitation, staying on the target
     pressFx();
-    await wait(0.05 + rnd() * 0.05);
+    const err = Math.hypot(cur.x - target().x, cur.y - target().y);
+    LOG(`click on ${el.className || el.tagName} at t=${now().toFixed(2)} s: ${err.toFixed(2)} px from the aim point`);
+    await follow(target, 0.05 + rnd() * 0.05);
     if (then) then();
     else el.click();
+    // Pressing a tab resizes the panel, so the bar the pointer is on slides away. Stay on the same button (found again
+    // in the new view) while it settles, so the click is never left hanging where the button used to be.
+    const isTab = el.classList && el.classList.contains('nav-item');
+    const again = () => (isTab ? navItem(el.dataset.tab) : el);
+    const after = () => {
+      const e2 = again();
+      if (!e2 || !e2.offsetParent) return { x: cur.x, y: cur.y };
+      const p = worldOf(e2, ax, ay);
+      return { x: p.x + jx, y: p.y + jy };
+    };
+    await follow(after, isTab ? 0.75 : 0.2);
   }
   function highlight(el, pad = 7) {
     const r = el.getBoundingClientRect();
@@ -644,19 +707,19 @@
     const at = (t) => (RENDER ? Tof(t) : T0a + t); // audio time of a film time
 
     // ================= A. COLD OPEN  0 - 10
-    S.riser(at(2.2), 2.8, 0.2);
-    S.impact(at(5.0), 0.6);
-    S.whoosh(at(8.6), 0.9, false, 0.1);
-    setFade(0, 1.9, E.outExpo);
-    camTo({ x: 960, y: 15, s: 7.9 }, 2.95, E.drift); // a slow, breathing push toward the eyes
-    await until(1.7);
-    const eyebrow = mk('eyebrow', 'Introducing', 735);
-    eyebrow.animate([{ opacity: 0, letterSpacing: '1.1em', filter: 'blur(10px)' }, { opacity: 1, letterSpacing: '0.5em', filter: 'blur(0)' }], { duration: 1500, easing: WORD_EASE, fill: 'forwards' });
-    await until(3.05);
-    await windUp(0.04, 0.3); // a breath in...
-    camTo({ x: 960, y: 330, s: 1.5 }, 1.55, E.whip); // ...and the pull-back, fast in the middle
-    fadeOut(eyebrow, { y: -14, ms: 600, delay: 500 });
-    await until(4.98);
+    // "Meet Mochi...": quiet and slow. A soft bloom of warm chord tones, an airy breath, one of Mochi's own
+    // chimes as the name appears. No slam, no flash, no shake.
+    S.whoosh(at(2.6), 2.2, true, 0.03);
+    S.bloom(at(4.3));
+    setFade(0, 2.4, E.drift);
+    camTo({ x: 960, y: 15, s: 7.9 }, 3.2, E.drift); // a slow, breathing push toward the eyes
+    await until(1.8);
+    const meet = mk('eyebrow', 'Meet', 330);
+    meet.style.fontSize = '34px';
+    meet.animate([{ opacity: 0, letterSpacing: '0.9em', filter: 'blur(12px)' }, { opacity: 1, letterSpacing: '0.46em', filter: 'blur(0)' }], { duration: 2200, easing: 'cubic-bezier(.3, .2, .2, 1)', fill: 'forwards' });
+    await until(3.4);
+    camTo({ x: 960, y: 330, s: 1.5 }, 2.8, E.drift); // an unhurried pull-back that eases in and out
+    await until(5.2);
     const face = window.Mochi.create({ mood: 'wink', size: 210, clickable: false });
     const logo = mk('logo', '', 470);
     const faceBox = document.createElement('div');
@@ -666,15 +729,15 @@
     word.textContent = 'Mochi';
     logo.append(faceBox, word);
     logo.style.opacity = 1;
-    logo.animate([{ opacity: 0, transform: 'scale(1.22)', filter: 'blur(26px)' }, { opacity: 1, transform: 'scale(1)', filter: 'blur(0)' }], { duration: 1500, easing: 'cubic-bezier(.2, .9, .1, 1)', fill: 'forwards' });
-    faceBox.animate([{ transform: 'translateY(40px) scale(0.7) rotate(-14deg)' }, { transform: 'translateY(-8px) scale(1.06) rotate(3deg)', offset: 0.55 }, { transform: 'none' }], { duration: 1400, delay: 150, easing: 'cubic-bezier(.3, 1.2, .5, 1)', fill: 'backwards' });
-    flash(0.45, 700);
-    kick(18, 0.9);
-    const tag = mk('tag', 'The little friend living in your notch.', 760);
-    fadeIn(tag, { delay: 700, ms: 1300 });
-    await until(8.5);
-    fadeOut(logo, { y: -40, ms: 800 });
-    fadeOut(tag, { y: -30, ms: 700 });
+    logo.animate([{ opacity: 0, transform: 'scale(1.035)', filter: 'blur(16px)' }, { opacity: 1, transform: 'scale(1)', filter: 'blur(0)' }], { duration: 2600, easing: 'cubic-bezier(.3, .2, .2, 1)', fill: 'forwards' });
+    faceBox.animate([{ transform: 'translateY(14px)' }, { transform: 'none' }], { duration: 2400, easing: 'cubic-bezier(.2, .7, .2, 1)', fill: 'backwards' });
+    emit('chime', 'pomoFocus'); // Mochi's own rising three notes
+    const tag = mk('tag', 'A little friend for your notch.', 760);
+    fadeIn(tag, { delay: 1100, ms: 1800, y: 14, blur: 8 });
+    await until(8.3);
+    fadeOut(logo, { y: -18, ms: 1300 });
+    fadeOut(tag, { y: -14, ms: 1200 });
+    fadeOut(meet, { y: -10, ms: 1200 });
     await until(8.85);
     ide.classList.add('dim');
     emit('music', { enabled: true, status: 'none' });
@@ -940,15 +1003,13 @@
 
     // ================= I. THE END  90 - 102.6
     c11.out('sink');
-    flash(0.55, 900);
-    kick(16, 0.9);
-    await setFade(1, 0.35, E.lin);
+    await setFade(1, 0.8, E.inOut); // a gentle dip to black, no flash or shake
     emit('hover', false);
     document.querySelectorAll('.brk-skip').forEach((b) => b.click());
     camSet({ x: 960, y: 330, s: 1.5 });
     emit('music', { enabled: true, status: 'none' });
-    await until(90.5);
-    setFade(0, 1.5, E.outExpo);
+    await until(90.9);
+    setFade(0, 2.0, E.drift);
     face.el.parentNode && face.el.parentNode.remove();
     const face2 = window.Mochi.create({ mood: 'happy', size: 210, clickable: false });
     const logo2 = mk('logo', '', 470);
@@ -959,12 +1020,12 @@
     word2.textContent = 'Mochi';
     logo2.append(fb, word2);
     logo2.style.opacity = 1;
-    logo2.animate([{ opacity: 0, transform: 'scale(1.12)', filter: 'blur(20px)' }, { opacity: 1, transform: 'scale(1)', filter: 'blur(0)' }], { duration: 1600, easing: 'cubic-bezier(.2, .9, .1, 1)', fill: 'forwards' });
-    fb.animate([{ transform: 'translateY(34px) scale(0.75) rotate(-10deg)' }, { transform: 'translateY(-6px) scale(1.05) rotate(2deg)', offset: 0.6 }, { transform: 'none' }], { duration: 1300, delay: 200, easing: 'cubic-bezier(.3, 1.2, .5, 1)', fill: 'backwards' });
+    logo2.animate([{ opacity: 0, transform: 'scale(1.035)', filter: 'blur(14px)' }, { opacity: 1, transform: 'scale(1)', filter: 'blur(0)' }], { duration: 2400, easing: 'cubic-bezier(.3, .2, .2, 1)', fill: 'forwards' });
+    fb.animate([{ transform: 'translateY(12px)' }, { transform: 'none' }], { duration: 2200, easing: 'cubic-bezier(.2, .7, .2, 1)', fill: 'backwards' });
     camTo({ x: 960, y: 300, s: 1.42 }, 10, E.drift);
     await until(92.0);
     const tag2 = mk('tag', 'Your Claude Code, living in the notch.', 735);
-    fadeIn(tag2, { ms: 1400 });
+    fadeIn(tag2, { ms: 1800, y: 14, blur: 8 });
     await until(94.2);
     const fine = mk('fine', 'For Windows 10 and 11  ·  Runs on your PC  ·  No account', 836);
     fadeIn(fine, { ms: 1200, y: 14 });

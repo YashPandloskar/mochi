@@ -13,7 +13,7 @@
   #screen { position: absolute; inset: 0; overflow: hidden; background: #000; }
 
   /* ---------- the world: a fake desktop the camera moves over ---------- */
-  #world { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; will-change: transform; }
+  #world { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; } /* no will-change: that pins the raster scale and turns close-ups into magnified 1x pixels */
   #bezel { position: absolute; left: -3000px; top: -3000px; width: 8000px; height: 3000px; background: #040405; }
   #bezel::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: linear-gradient(90deg, transparent, rgba(255,255,255,.14) 30%, rgba(255,255,255,.14) 70%, transparent); }
   #wall { position: absolute; left: -3000px; top: 0; width: 8000px; height: 4000px; overflow: hidden;
@@ -43,8 +43,8 @@
   /* mochi itself: the real interface, positioned like the real window (600 wide, centred on the screen) */
   #frame { position: absolute; left: 660px; top: 0; width: 600px; height: 400px; }
   #frame #notch, #frame #bubble { z-index: 5; }
-  #hl { position: absolute; z-index: 20; border: 2px solid rgba(255,255,255,.95); border-radius: 18px; box-shadow: 0 0 0 4px rgba(255,255,255,.12), 0 0 34px rgba(255,255,255,.35); opacity: 0; pointer-events: none; transition: opacity .35s, left .5s var(--ease-out), top .5s var(--ease-out), width .5s var(--ease-out), height .5s var(--ease-out); }
-  #cursor { position: absolute; left: 0; top: 0; z-index: 30; width: 26px; height: 32px; margin: -2px 0 0 -3px; opacity: 0; filter: drop-shadow(0 3px 5px rgba(0,0,0,.55)); will-change: transform; }
+  #hl { position: absolute; z-index: 20; box-sizing: border-box; border: 2px solid rgba(255,255,255,.95); border-radius: 18px; box-shadow: 0 0 0 4px rgba(255,255,255,.12), 0 0 34px rgba(255,255,255,.35); opacity: 0; pointer-events: none; transition: opacity .35s, left .5s var(--ease-out), top .5s var(--ease-out), width .5s var(--ease-out), height .5s var(--ease-out); }
+  #cursor { position: absolute; left: 0; top: 0; z-index: 30; width: 26px; height: 32px; margin: -2px 0 0 -3px; opacity: 0; filter: drop-shadow(0 3px 5px rgba(0,0,0,.55)); transform-origin: 3px 2px; } /* scales about its tip, so a press never moves the point that clicks */
   #ripple { position: absolute; z-index: 29; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; border: 2px solid rgba(255,255,255,.9); opacity: 0; pointer-events: none; }
 
   /* ---------- screen-space layers ---------- */

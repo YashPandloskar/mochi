@@ -2,7 +2,7 @@
 
 A 102-second, 1920x1080, 60 fps trailer made from the real Mochi interface. Nothing is screen-recorded: the actual
 `src/renderer` runs on a fake desktop, driven by the same events Claude Code and the tray send, and every frame is
-rendered on a virtual clock, so no frame is ever dropped or stretched.
+rendered at 2x resolution on a virtual clock and reduced to 1080p, so no frame is ever dropped or stretched.
 
 ```powershell
 # render the trailer (about 6 minutes; plays out of sight beyond the screen edge, so you can keep working)

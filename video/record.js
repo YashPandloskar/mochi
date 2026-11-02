@@ -15,7 +15,14 @@ const shotDir = process.env.TRAILER_SHOTS || outDir;
 const logFile = path.join(outDir, 'record.log');
 
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
-app.commandLine.appendSwitch('force-device-scale-factor', '1'); // 1 CSS px = 1 real pixel: the capture is exactly 1920x1080
+// Supersampling: the page is drawn at SS times the pixel density (1 CSS px = SS real pixels) and every frame is then
+// reduced to exactly 1920x1080 with a high-quality filter. Edges, text and close-ups come out crisp, never pixelated.
+// A render uses 2x unless told otherwise (--ss=1 to turn it off, --ss=3 for more).
+const ssArg = process.argv.find((a) => a.startsWith('--ss='));
+const SS = ssArg ? Number(ssArg.slice(5)) : process.argv.includes('--render') ? 2 : 1;
+// A window cannot be larger than the screen, so supersampling uses an off-screen-rendered page (no window at all) that
+// is SS times larger than the film and zoomed by SS: the layout stays 1920x1080 CSS px, drawn with SS times the pixels.
+app.commandLine.appendSwitch('force-device-scale-factor', '1');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
 app.commandLine.appendSwitch('disable-background-timer-throttling');
 
@@ -26,16 +33,22 @@ const log = (m) => fs.appendFileSync(logFile, `${new Date().toISOString().slice(
 
 const render = process.argv.includes('--render');
 ipcMain.on('rec:options', (e) => (e.returnValue = { preview, render, quick: process.argv.includes('--quick') }));
-ipcMain.handle('rec:grab', async () => (await win.webContents.capturePage()).toBitmap());
+const grabImage = async () => {
+  const img = await win.webContents.capturePage();
+  return SS > 1 ? img.resize({ width: 1920, height: 1080, quality: 'best' }) : img;
+};
+ipcMain.handle('rec:grab', async () => (await grabImage()).toBitmap());
+const stopArg = process.argv.find((a) => a.startsWith('--stop='));
 ipcMain.on('rec:log', (_e, m) => log(m));
 ipcMain.on('rec:chunk', (_e, u8) => stream && stream.write(Buffer.from(u8)));
 ipcMain.on('rec:started', () => {
   log('timeline started');
   const t0 = Date.now();
+  if (stopArg) setTimeout(() => app.quit(), Number(stopArg.slice(7)) * 1000); // rehearsal only: stop early
   for (const s of shots) {
     setTimeout(async () => {
       try {
-        const img = await win.webContents.capturePage();
+        const img = await grabImage();
         fs.writeFileSync(path.join(shotDir, `shot-${String(s).padStart(3, '0')}.png`), img.toPNG());
       } catch (e) {
         log('shot failed ' + e.message);
@@ -54,10 +67,10 @@ app.whenReady().then(async () => {
   // rehearsal and --render play beyond the screen edge, out of your way (frames are read from the page itself)
   const offscreen = process.argv.includes('--offscreen') || render;
   win = new BrowserWindow({
-    x: offscreen ? -2100 : 0,
+    x: offscreen ? -(1920 * SS + 300) : 0,
     y: 0,
-    width: 1920,
-    height: 1080,
+    width: 1920 * SS,
+    height: 1080 * SS,
     useContentSize: true,
     frame: false,
     resizable: false,
@@ -74,8 +87,13 @@ app.whenReady().then(async () => {
       nodeIntegration: false,
       backgroundThrottling: false,
       autoplayPolicy: 'no-user-gesture-required',
+      offscreen: SS > 1,
     },
   });
+  if (SS > 1) {
+    win.webContents.setFrameRate(60);
+    win.webContents.setZoomFactor(SS);
+  }
   win.setAlwaysOnTop(true, 'screen-saver');
   if (!preview) stream = fs.createWriteStream(outFile);
   if (render) win.setAlwaysOnTop(false);
