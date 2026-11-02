@@ -5,6 +5,7 @@ const windowMgr = require('./window');
 const tray = require('./tray');
 const server = require('./server');
 const SessionState = require('./session-state');
+const Usage = require('./usage');
 
 app.setName('mochi');
 if (!app.requestSingleInstanceLock()) app.quit();
@@ -21,8 +22,17 @@ app.whenReady().then(() => {
     onJobs: (jobs) => config.update({ jobs }),
   });
 
+  const usage = new Usage({ dir: config.configDir(), enabled: cfg.showUsage });
+  usage.on('change', (u) => windowMgr.send('usage', u));
+  usage.start();
+
   const win = windowMgr.create(cfg);
   const trayIcon = tray.create({
+    showUsage: cfg.showUsage,
+    onToggleUsage: (on) => {
+      config.update({ showUsage: on });
+      usage.setEnabled(on);
+    },
     onPreview: (s) => state.preview(s),
     onResolve: (id, decision) => state.resolve(id, decision),
     onMood: (m) => windowMgr.send('mood', m),
@@ -37,9 +47,11 @@ app.whenReady().then(() => {
     const snap = state.snapshot();
     windowMgr.send('state', snap.state);
     windowMgr.send('session', snap);
+    if (usage.current) windowMgr.send('usage', usage.current);
   });
 
-  server.start({ port: cfg.port, token: cfg.token, state });
+  // MOCHI_PORT lets a test copy run without receiving the real hook events
+  server.start({ port: Number(process.env.MOCHI_PORT) || cfg.port, token: cfg.token, state });
 
   if (process.env.MOCHI_STATE) state.preview(process.env.MOCHI_STATE);
 });

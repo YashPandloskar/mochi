@@ -10,13 +10,37 @@
   const shadow = ([x, blur], c) => `${x}px 0 ${blur}px ${c}`.replace(/^0px 0 /, '0 0 ');
 
   // ---------- theme -> CSS variables ----------
-  root.setProperty('--text', theme.colors.text);
-  root.setProperty('--muted', theme.colors.muted);
-  root.setProperty('--resize', theme.timings.resize + 's');
-  root.setProperty('--easing', theme.timings.easing);
-  root.setProperty('--fade', theme.timings.fade + 's');
-  root.setProperty('--collapsed-h', theme.collapsed.height + 'px');
-  root.setProperty('--eye-gap', theme.eyes.gap + 'px');
+  const H = theme.home;
+  const vars = {
+    '--text': theme.colors.text,
+    '--muted': theme.colors.muted,
+    '--resize': theme.timings.resize + 's',
+    '--easing': theme.timings.easing,
+    '--fade': theme.timings.fade + 's',
+    '--collapsed-h': theme.collapsed.height + 'px',
+    '--eye-gap': theme.eyes.gap + 'px',
+    '--home-pad': H.padding + 'px',
+    '--label': H.labelColor,
+    '--tile-h': H.tile.height + 'px',
+    '--tile-radius': H.tile.radius + 'px',
+    '--tile-pad': H.tile.padding + 'px',
+    '--tile-gap': H.tile.gap + 'px',
+    '--tile-top': H.tile.topColor,
+    '--rise-ms': H.rise.ms + 'ms',
+    '--rise-ease': H.rise.easing,
+    '--spark-s': H.sparkleSpinSeconds + 's',
+    '--breathe-s': H.playBreatheSeconds + 's',
+    '--eq-1': H.equaliserSeconds[0] + 's',
+    '--eq-2': H.equaliserSeconds[1] + 's',
+    '--eq-3': H.equaliserSeconds[2] + 's',
+    '--nav-h': H.nav.height + 'px',
+    '--nav-bg': H.nav.background,
+    '--nav-active': H.nav.activeBackground,
+    '--nav-icon': H.nav.icon,
+    '--bar-h': theme.usage.barHeight + 'px',
+    '--bar-track': theme.usage.track,
+  };
+  for (const [k, v] of Object.entries(vars)) root.setProperty(k, v);
   notch.classList.toggle('glow', theme.notchGlow);
 
   let state = 'idle';
@@ -24,11 +48,32 @@
   let hover = false;
   let collapseTimer = null;
   let contentTimer = null;
+  let moodOverride = null;
+
+  // ---------- panel views ----------
+  const home = window.HomeView.create();
+
+  // Stand-in for the Working / Needs / Done panels (later stages): one Mochi, mood follows the state.
+  const mochi = window.Mochi.create({ mood: theme.mochi.moodByState.idle, size: 72 });
+  const caption = document.createElement('div');
+  const placeholder = document.createElement('div');
+  placeholder.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--muted);font-size:13px';
+  placeholder.append(mochi.el, caption);
+
+  content.append(home.el, placeholder);
+
+  function showView() {
+    const isHome = state === 'idle';
+    home.el.style.display = isHome ? '' : 'none';
+    placeholder.style.display = isHome ? 'none' : 'flex';
+    caption.textContent = `${state}  (panel arrives in a later stage)`;
+    mochi.setMood(moodOverride || theme.mochi.moodByState[state]);
+  }
 
   // ---------- geometry ----------
   function applyGeometry() {
     if (expanded) {
-      const p = theme.panels[state];
+      const p = theme.panels[theme.panelForState[state]];
       notch.style.width = theme.expanded.width + 'px';
       notch.style.height = p.height + 'px';
       notch.style.borderRadius = radius(theme.expanded.radius);
@@ -44,30 +89,20 @@
     }
   }
 
-  // Placeholder panel body until the real views arrive: one Mochi, mood follows the state.
-  const mochi = window.Mochi.create({ mood: theme.mochi.moodByState.idle, size: 72 });
-  const caption = document.createElement('div');
-  const stack = document.createElement('div');
-  stack.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:10px';
-  stack.append(mochi.el, caption);
-  content.appendChild(stack);
-
-  function setContent() {
-    caption.textContent = `${state}  (panel arrives in a later stage)`;
-    mochi.setMood(moodOverride || theme.mochi.moodByState[state]);
-  }
-  let moodOverride = null;
-
   // Expand: resize first, then fade the content in. Collapse: fade out, then resize.
   function expand() {
     if (expanded) return;
     clearTimeout(contentTimer);
     expanded = true;
     notch.classList.remove('content-visible');
-    setContent();
+    content.style.visibility = 'visible';
+    showView();
     applyGeometry();
     notch.classList.add('expanded');
-    contentTimer = setTimeout(() => notch.classList.add('content-visible'), ms(theme.timings.resize * 0.6));
+    contentTimer = setTimeout(() => {
+      notch.classList.add('content-visible');
+      home.rise();
+    }, ms(theme.timings.resize * 0.6));
   }
 
   function collapse() {
@@ -78,6 +113,8 @@
       expanded = false;
       notch.classList.remove('expanded');
       applyGeometry();
+      // stop painting hidden animations once the shrink has finished
+      contentTimer = setTimeout(() => (content.style.visibility = 'hidden'), ms(theme.timings.resize));
     }, ms(theme.timings.fade));
   }
 
@@ -128,12 +165,15 @@
   }
 
   function setState(next) {
-    if (!theme.panels[next]) return;
+    if (!theme.panelForState[next]) return;
+    const changed = next !== state;
     state = next;
+    moodOverride = null;
     buildEyes();
     if (expanded) {
-      setContent();
+      showView();
       applyGeometry();
+      if (changed && state === 'idle') home.rise();
     }
   }
 
@@ -144,16 +184,15 @@
     if (inside) expand();
     else collapseTimer = setTimeout(() => !hover && collapse(), ms(theme.timings.collapseDelay));
   });
-  window.mochi.onState((s) => {
-    moodOverride = null;
-    setState(s);
-    setContent();
-  });
+  window.mochi.onState(setState);
+  window.mochi.onSession((session) => home.update({ session }));
+  window.mochi.onUsage((usage) => home.update({ usage }));
   window.mochi.onMood((m) => {
     moodOverride = m;
     mochi.setMood(m);
   });
 
+  content.style.visibility = 'hidden';
   applyGeometry();
   buildEyes();
 })();

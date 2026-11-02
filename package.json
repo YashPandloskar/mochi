@@ -8,7 +8,7 @@
     "start": "electron .",
     "hooks:install": "node scripts/hooks.js install",
     "hooks:uninstall": "node scripts/hooks.js uninstall",
-    "test": "node scripts/selftest.js"
+    "test": "node scripts/selftest.js && node scripts/selftest-usage.js"
   },
   "devDependencies": {
     "electron": "^45.2.1"

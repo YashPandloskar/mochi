@@ -7,6 +7,7 @@ const defaults = {
   monitor: 'primary',
   port: 47900,
   token: null,
+  showUsage: true, // "Show usage on Claude tile"
   // the user's own statusLine, saved by the hook installer so it can be chained and restored
   statusLineOriginal: null,
   jobs: { date: '', count: 0 },

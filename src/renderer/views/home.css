@@ -1,0 +1,152 @@
+/* Home panel. Sizes and colours come from theme.home / theme.usage via CSS variables set in app.js. */
+
+.home {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  padding: 12px var(--home-pad) 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.home-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 24px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.home-mochi { display: flex; }
+.home-date { flex: 1; letter-spacing: 0.01em; }
+.home-time { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--tile-gap);
+}
+
+.tile {
+  position: relative;
+  box-sizing: border-box;
+  height: var(--tile-h);
+  padding: var(--tile-pad);
+  border: 0;
+  border-radius: var(--tile-radius);
+  /* flat: no glow, no shadow, just an internal vertical gradient */
+  background: linear-gradient(to bottom, var(--tile-top), var(--to));
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+button.tile { cursor: pointer; }
+
+.t-label { font-size: 11px; color: var(--label); height: 14px; display: flex; align-items: center; gap: 6px; }
+.t-big { font-size: 26px; font-weight: 650; line-height: 1; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; margin-top: auto; }
+.t-sub { font-size: 11px; color: var(--label); margin-top: 3px; height: 15px; line-height: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Claude tile */
+.t-spark {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  color: var(--text);
+  animation: spin var(--spark-s) linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.t-usage { margin-top: 6px; display: flex; flex-direction: column; gap: 3px; }
+.t-usage[hidden] { display: none; }
+.u-row { display: flex; align-items: center; gap: 6px; height: 10px; }
+.u-label { font-size: 9.5px; color: var(--label); width: 54px; flex: none; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.u-bar { flex: 1; height: var(--bar-h); border-radius: 99px; background: var(--bar-track); overflow: hidden; }
+.u-bar i { display: block; height: 100%; border-radius: 99px; transition: width 0.6s ease, background 0.3s linear; }
+.u-line { font-size: 10px; color: var(--label); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Music tile */
+.eq { display: inline-flex; align-items: flex-end; gap: 2px; height: 10px; }
+.eq i { width: 2.5px; height: 4px; border-radius: 1px; background: var(--text); opacity: 0.85; }
+.eq.playing i { animation: eq var(--eq-a, 0.9s) ease-in-out infinite alternate; }
+.eq i:nth-child(1) { --eq-a: var(--eq-1); }
+.eq i:nth-child(2) { --eq-a: var(--eq-2); height: 7px; }
+.eq i:nth-child(3) { --eq-a: var(--eq-3); height: 5px; }
+@keyframes eq { from { height: 3px; } to { height: 10px; } }
+.t-art {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.14) center / cover no-repeat;
+}
+.t-bottom { margin-top: auto; min-width: 0; }
+.tile-music.has-button .t-bottom { padding-right: 34px; } /* room for the pause button while a track is loaded */
+.t-title { font-size: 13px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.t-artist { font-size: 11px; color: var(--label); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* round buttons */
+.t-round {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+}
+.t-playpause { position: absolute; right: 10px; bottom: 10px; border: 0; color: #1a1a1a; cursor: pointer; padding: 0; }
+.t-playpause[hidden] { display: none; }
+.t-play {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  color: var(--to);
+  animation: breathe var(--breathe-s) ease-in-out infinite;
+}
+@keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.09); } }
+
+/* staggered spring rise-in on every expand */
+.home .tile, .home .nav { opacity: 0; }
+.home.rise .tile {
+  animation: rise var(--rise-ms) var(--rise-ease) var(--delay) both;
+}
+.home.rise .nav { animation: rise var(--rise-ms) var(--rise-ease) 240ms both; }
+@keyframes rise {
+  from { opacity: 0; transform: translateY(26px) scale(0.94); }
+  to { opacity: 1; transform: none; }
+}
+
+/* nav pill */
+.nav {
+  align-self: center;
+  margin-top: 12px;
+  height: var(--nav-h);
+  box-sizing: border-box;
+  padding: 0 6px;
+  border-radius: 99px;
+  background: var(--nav-bg);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.nav-item {
+  height: 22px;
+  min-width: 26px;
+  padding: 0 6px;
+  box-sizing: border-box;
+  border-radius: 99px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  color: var(--nav-icon);
+}
+.nav-item.active { background: var(--nav-active); color: var(--text); padding: 0 10px; }
+.nav-item b { font-size: 11px; font-weight: 600; }

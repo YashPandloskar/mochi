@@ -10,7 +10,7 @@ const STATES = [
 
 const MOODS = ['wink', 'focus', 'curious', 'happy', 'dizzy'];
 
-function create({ onPreview, onResolve, onMood }) {
+function create({ onPreview, onResolve, onMood, showUsage, onToggleUsage }) {
   const icon = nativeImage.createFromPath(path.join(__dirname, '..', '..', 'assets', 'tray.png'));
   const tray = new Tray(icon);
   tray.setToolTip('mochi');
@@ -28,6 +28,16 @@ function create({ onPreview, onResolve, onMood }) {
       );
     }
     items.push(
+      {
+        label: 'Show usage on Claude tile',
+        type: 'checkbox',
+        checked: showUsage,
+        click: (item) => {
+          showUsage = item.checked;
+          onToggleUsage(showUsage);
+        },
+      },
+      { type: 'separator' },
       { label: 'Preview state', submenu: STATES.map(([label, id]) => ({ label, click: () => onPreview(id) })) },
       { label: 'Preview Mochi mood', submenu: MOODS.map((m) => ({ label: m, click: () => onMood(m) })) },
       { type: 'separator' },

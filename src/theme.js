@@ -28,6 +28,9 @@ const theme = {
     radius: [0, 0, 28, 28],
   },
 
+  // Which panel each notch state expands to.
+  panelForState: { idle: 'home', working: 'working', needs: 'needs', done: 'done' },
+
   // Expanded panel heights and vertical gradients (top to bottom).
   panels: {
     home: { height: 222, from: '#040404', to: '#17140f' },
@@ -62,6 +65,39 @@ const theme = {
     edit: ['Edit', 'Write', 'MultiEdit', 'NotebookEdit'],
     // a Bash command matching this counts as running tests
     testCommand: '\\b(npm|pnpm|yarn|bun)\\s+(run\\s+)?t(est)?\\b|\\b(jest|vitest|pytest|mocha|phpunit|rspec|ctest)\\b|\\b(go|cargo|dotnet|gradle|mvn)\\s+test\\b',
+  },
+
+  // Expanded Home panel.
+  home: {
+    padding: 16,
+    labelColor: 'rgba(244, 241, 236, 0.72)',
+    tile: { height: 114, radius: 18, padding: 12, gap: 10, topColor: '#0a0a0a' },
+    tileColors: { claude: '#e0793a', music: '#e23a50', focus: '#8f4fe0' },
+    rise: { ms: 600, easing: 'cubic-bezier(.34,1.56,.64,1)', delaysMs: [0, 80, 160] }, // staggered spring
+    sparkleSpinSeconds: 8,
+    playBreatheSeconds: 2,
+    equaliserSeconds: [0.9, 1.1, 0.7],
+    focusMinutes: 25,
+    nav: { height: 30, background: 'rgba(255, 255, 255, 0.07)', activeBackground: 'rgba(255, 255, 255, 0.12)', icon: 'rgba(244, 241, 236, 0.55)' },
+  },
+
+  // Claude tile usage footer. Bars come from the status line; the fallback scans local logs.
+  usage: {
+    barHeight: 3,
+    track: 'rgba(244, 241, 236, 0.16)',
+    colors: { normal: '#f4f1ec', warn: '#ffd07a', danger: '#ff7a6b' },
+    warnAt: 75, // from here the bar turns amber and the status line becomes a reset countdown
+    dangerAt: 90,
+    scanThrottleSeconds: 30,
+    // fallback cost estimate, USD per million tokens. Estimates, edit to match your pricing.
+    // Cache writes are 1.25x (5 min) or 2x (1 h) of input, cache reads 0.1x.
+    prices: [
+      { match: 'opus', input: 5, output: 25 },
+      { match: 'fable', input: 5, output: 25 },
+      { match: 'sonnet', input: 3, output: 15 },
+      { match: 'haiku', input: 1, output: 5 },
+    ],
+    defaultPrice: { input: 3, output: 15 },
   },
 
   // The Mochi character (src/renderer/components/mochi.js). Every screen uses the same drawing.
