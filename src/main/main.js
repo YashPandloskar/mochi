@@ -53,7 +53,10 @@ app.whenReady().then(() => {
   // MOCHI_PORT lets a test copy run without receiving the real hook events
   server.start({ port: Number(process.env.MOCHI_PORT) || cfg.port, token: cfg.token, state });
 
-  if (process.env.MOCHI_STATE) state.preview(process.env.MOCHI_STATE);
+  // Dev aid: `npm start -- --preview-state=needs`. An explicit flag, not an environment variable,
+  // so a value left behind in a terminal can never force a state on a normal start.
+  const flag = process.argv.find((a) => a.startsWith('--preview-state='));
+  if (flag) state.preview(flag.split('=')[1]);
 });
 
 // The notch lives in the tray; closing the window must not quit the app.
