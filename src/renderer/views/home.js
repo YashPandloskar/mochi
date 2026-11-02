@@ -70,7 +70,9 @@
     el.querySelectorAll('[data-r]').forEach((n) => (r[n.dataset.r] = n));
     const date = el.querySelector('.home-date');
     const time = el.querySelector('.home-time');
-    el.querySelector('.home-mochi').appendChild(Mochi.create({ mood: 'wink', size: 22 }).el);
+    const headerMochi = Mochi.create({ mood: 'wink', size: 22 });
+    const headerBox = el.querySelector('.home-mochi');
+    headerBox.appendChild(headerMochi.el);
 
     el.querySelectorAll('.tile').forEach((t, i) => {
       t.style.setProperty('--to', Object.values(H.tileColors)[i]);
@@ -177,6 +179,11 @@
         if (next.music) renderMusic(next.music);
         renderUsage();
         tick();
+      },
+      // personality: sleepy when napping or late at night, swaying while music plays
+      setLook({ napping, dancing, look }) {
+        headerMochi.setMood(napping || look === 'night' ? 'sleepy' : 'wink');
+        headerBox.classList.toggle('dancing', !!dancing);
       },
       // replay the staggered rise-in
       rise() {

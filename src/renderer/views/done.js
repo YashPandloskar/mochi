@@ -19,7 +19,7 @@
         <div class="work-mid">
           <div class="w-project" data-r="project"></div>
           <div class="w-timer" data-r="timer">0:00</div>
-          <div class="w-done"><b>Done</b> <span>every step</span></div>
+          <div class="w-done"><b>Done</b> <span>every step</span><em class="badge" data-r="badge" hidden></em></div>
         </div>
         <div class="bubble" data-r="bubble"></div>
       </div>`;
@@ -36,11 +36,19 @@
     const confetti = el.querySelector('.confetti');
     const jumper = el.querySelector('.jumper');
 
+    let milestone = 0;
+    const ordinal = (n) => {
+      const s = ['th', 'st', 'nd', 'rd'];
+      const v = n % 100;
+      return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    };
+
     function burst() {
       confetti.replaceChildren();
-      for (let i = 0; i < D.confettiPieces; i++) {
-        const a = (i / D.confettiPieces) * Math.PI * 2 + Math.random() * 0.4;
-        const dist = 34 + Math.random() * 26;
+      const pieces = milestone ? theme.personality.milestoneConfettiPieces : D.confettiPieces;
+      for (let i = 0; i < pieces; i++) {
+        const a = (i / pieces) * Math.PI * 2 + Math.random() * 0.4;
+        const dist = (34 + Math.random() * 26) * (milestone ? 1.35 : 1);
         const p = document.createElement('i');
         p.style.setProperty('--dx', Math.round(Math.cos(a) * dist) + 'px');
         p.style.setProperty('--dy', Math.round(Math.sin(a) * dist - 10) + 'px');
@@ -59,6 +67,11 @@
         const to = s.finishedAt || Date.now();
         r.timer.textContent = from ? WorkingView.clock((to - from) / 1000) : '0:00';
         r.bubble.textContent = tidy(s.lastMessage);
+        // a small celebration when jobs today reaches a milestone (personality setting)
+        milestone = window.Personality && Personality.enabled && theme.personality.milestones.includes(s.jobsToday) ? s.jobsToday : 0;
+        r.badge.hidden = !milestone;
+        if (milestone) r.badge.textContent = `★ ${ordinal(milestone)} job today`;
+        el.classList.toggle('milestone', !!milestone);
       },
       // replay every entrance animation (called when the panel is shown for a finished job)
       play() {

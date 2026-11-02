@@ -61,6 +61,7 @@ class SessionState extends EventEmitter {
   }
 
   handle(ev) {
+    this.emit('activity');
     const id = ev.session_id || 'unknown';
     const s = this.session(id, ev.cwd);
     const now = Date.now();
@@ -157,6 +158,7 @@ class SessionState extends EventEmitter {
 
   // Holds until resolve() is called. Resolves with 'allow' | 'deny' | 'timeout' | 'gone'.
   requestApproval(ev) {
+    this.emit('activity');
     const s = this.session(ev.session_id || 'unknown', ev.cwd);
     s.lastEvent = Date.now();
     this.currentId = s.id;
@@ -207,7 +209,7 @@ class SessionState extends EventEmitter {
       lastMessage: '',
     };
     if (state === 'done') {
-      return { ...base, step: 4, startedAt: now - 7000, finishedAt: now, testResult: '48 passed', lastMessage: 'Done! The total now adds VAT the right way. All 48 tests pass.' };
+      return { ...base, step: 4, startedAt: now - 7000, finishedAt: now, jobsToday: 5, testResult: '48 passed', lastMessage: 'Done! The total now adds VAT the right way. All 48 tests pass.' };
     }
     return base;
   }
@@ -256,7 +258,7 @@ class SessionState extends EventEmitter {
       needsText: approval ? approval.command : s ? s.needsHint : '',
       approval: approval && { id: approval.id, requestedAt: approval.requestedAt, toolName: approval.toolName, command: approval.command, diff: approval.diff },
       pendingCount: this.pending.length,
-      jobsToday: this.jobs.date === new Date().toLocaleDateString('sv') ? this.jobs.count : 0,
+      jobsToday: demo && demo.jobsToday !== undefined ? demo.jobsToday : this.jobs.date === new Date().toLocaleDateString('sv') ? this.jobs.count : 0,
     };
   }
 }

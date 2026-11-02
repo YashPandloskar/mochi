@@ -26,6 +26,7 @@ function create({ getSettings, actions }) {
       check('Pause notch', 'paused', { accelerator: 'Ctrl+Alt+M', registerAccelerator: false }),
       check('Hide while gaming (Valorant, Dota 2)', 'gameMode'),
       { type: 'separator' },
+      check('Mochi personality', 'personality'),
       check('Sounds', 'sounds'),
       check('Show usage on Claude tile', 'showUsage'),
       check('Music module (Apple Music)', 'music'),
@@ -51,6 +52,17 @@ function create({ getSettings, actions }) {
       },
       { type: 'separator' },
       { label: 'Preview state', submenu: STATES.map(([label, id]) => ({ label, click: () => actions.preview(id) })) },
+      {
+        label: 'Preview personality',
+        submenu: [
+          ['Nap now', 'nap'],
+          ['Wake up', 'wake'],
+          ['Break reminder', 'break'],
+          ['Late-night look', 'night'],
+          ['Morning look', 'morning'],
+          ['Normal look', 'normal'],
+        ].map(([label, id]) => ({ label, click: () => actions.personality(id) })),
+      },
       { type: 'separator' },
       { label: 'Quit mochi', click: () => app.quit() },
     ]);

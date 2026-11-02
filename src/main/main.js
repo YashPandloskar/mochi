@@ -10,6 +10,7 @@ const Usage = require('./usage');
 const Music = require('./music');
 const GameMode = require('./gamemode');
 const notify = require('./notify');
+const BreakTimer = require('./breaks');
 
 app.setName('mochi');
 // Windows toasts need an app identity; an unpackaged Electron app uses its own executable path.
@@ -26,6 +27,7 @@ app.whenReady().then(() => {
   const settings = {
     paused: false, // not persisted: a restart always starts unpaused
     gameMode: cfg.gameMode,
+    personality: cfg.personality,
     sounds: cfg.sounds,
     showUsage: cfg.showUsage,
     music: cfg.music,
@@ -86,10 +88,21 @@ app.whenReady().then(() => {
     windowMgr.send('session', snap);
     maybeNotify(snap);
   });
+  // ---------- break reminders ----------
+  const breaks = new BreakTimer({ canFire: () => settings.personality && !quiet() });
+  state.on('activity', () => breaks.activity());
+  breaks.on('due', (info) => {
+    windowMgr.send('break', info);
+    if (settings.sounds) windowMgr.send('chime', 'break');
+    notify.toast('break', {});
+  });
+  ipcMain.on('break:answer', (_e, action) => (action === 'snooze' ? breaks.snooze() : breaks.done()));
+
   usage.on('change', (u) => windowMgr.send('usage', u));
   music.on('change', (m) => windowMgr.send('music', m));
 
-  const pushSettings = () => windowMgr.send('settings', { motion: settings.motion, sounds: settings.sounds, focusMinutes: settings.focusMinutes });
+  const pushSettings = () =>
+    windowMgr.send('settings', { motion: settings.motion, sounds: settings.sounds, focusMinutes: settings.focusMinutes, personality: settings.personality });
   win.webContents.on('did-finish-load', () => {
     const snap = state.snapshot();
     windowMgr.send('state', snap.state);
@@ -132,6 +145,9 @@ app.whenReady().then(() => {
       if (key === 'gameMode') {
         game.setEnabled(settings.gameMode);
         config.update({ gameMode: settings.gameMode });
+      } else if (key === 'personality') {
+        config.update({ personality: settings.personality });
+        pushSettings();
       } else if (key === 'sounds') {
         config.update({ sounds: settings.sounds });
         pushSettings();
@@ -157,6 +173,7 @@ app.whenReady().then(() => {
       windowMgr.reposition(id);
     },
     preview: (s) => state.preview(s),
+    personality: (kind) => (kind === 'break' ? windowMgr.send('break', { minutes: 50, preview: true }) : windowMgr.send('personality', kind)),
   };
   tray.create({ getSettings: () => settings, actions });
 
@@ -164,6 +181,7 @@ app.whenReady().then(() => {
 
   // ---------- go ----------
   usage.start();
+  // breaks.start(); // switched on once the renderer has the break panel wired (see README / next steps)
   music.start();
   game.start();
   // MOCHI_PORT lets a test copy run without receiving the real hook events
@@ -177,6 +195,7 @@ app.whenReady().then(() => {
   app.on('before-quit', () => {
     globalShortcut.unregisterAll();
     music.stop();
+    breaks.stop();
     game.stop();
     usage.stop();
   });

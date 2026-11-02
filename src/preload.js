@@ -10,6 +10,9 @@ contextBridge.exposeInMainWorld('mochi', {
   musicCommand: (cmd) => ipcRenderer.send('music:command', cmd), // playpause | next | prev | open
   onSettings: (cb) => ipcRenderer.on('settings', (_e, s) => cb(s)),
   onChime: (cb) => ipcRenderer.on('chime', (_e, kind) => cb(kind)),
+  onBreak: (cb) => ipcRenderer.on('break', (_e, info) => cb(info)),
+  breakAnswer: (action) => ipcRenderer.send('break:answer', action), // ok | snooze
+  onPersonality: (cb) => ipcRenderer.on('personality', (_e, kind) => cb(kind)), // tray previews
   setFocusMinutes: (m) => ipcRenderer.send('focus:minutes', m),
   focusDone: () => ipcRenderer.send('focus:done'),
   resolveApproval: (id, decision) => ipcRenderer.send('approval:resolve', { id, decision }),

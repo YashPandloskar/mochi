@@ -6,11 +6,11 @@
 //
 //   const g = Mochi.group({ mood: 'focus' });             // bare <g> to embed inside another SVG
 //
-// Moods: wink, focus, curious, happy, dizzy.
+// Moods: wink, focus, curious, happy, dizzy, sleepy.
 // Hooks for scenes: .m-root (squish), .m-face, .m-eyes, .m-brows, .m-body.
 (() => {
   const NS = 'http://www.w3.org/2000/svg';
-  const MOODS = ['wink', 'focus', 'curious', 'happy', 'dizzy'];
+  const MOODS = ['wink', 'focus', 'curious', 'happy', 'dizzy', 'sleepy'];
   const BLINKS = new Set(['wink', 'focus', 'curious']);
   const BODY_PATH = 'M24 7C35 7 42 15 42 26C42 37 35 42 24 42C13 42 6 37 6 26C6 15 13 7 24 7Z';
 
@@ -27,6 +27,8 @@
       @keyframes m-blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(var(--m-closed, .1)); } }
       .m-twinkle { transform-box: fill-box; transform-origin: 50% 50%;
         animation: m-twinkle var(--m-sparkle, 1.8s) ease-in-out infinite; }
+      .m-z { transform-box: fill-box; transform-origin: 50% 100%; animation: m-zfloat 3s ease-in-out infinite; }
+      @keyframes m-zfloat { 0%, 100% { transform: translateY(1px); opacity: .55; } 50% { transform: translateY(-2px); opacity: 1; } }
       @keyframes m-twinkle { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(.7); opacity: .7; } }`;
     document.head.appendChild(s);
   }
@@ -58,6 +60,11 @@
         return (
           eyes(`<path d="M13 27q4-6 8 0M27 27q4-6 8 0" ${line}/>`) + `<path d="M19 31q5 7 10 0z" ${ink} stroke="${t.ink}" stroke-width="1" stroke-linejoin="round"/>`
         );
+      case 'sleepy':
+        return (
+          // closed, drooping eyes and a tiny mouth; no blink
+          eyes(`<path d="M13 28q4 3.5 8 0M27 28q4 3.5 8 0" ${line}/>`) + `<path d="M22 33.5q2 1.5 4 0" ${line}/>`
+        );
       case 'dizzy':
         return (
           eyes(`<path d="M13 23l7 7M20 23l-7 7M28 23l7 7M35 23l-7 7" ${line}/>`) + `<path d="M19 33q2.5-3 5 0t5 0" ${line}/>`
@@ -72,13 +79,17 @@
         `<circle cx="35" cy="31" r="3" fill="${t.cheek}" opacity="${t.cheekOpacity}"/>`
       : '';
     const tilt = mood === 'curious' ? ' transform="rotate(-6 24 26)"' : '';
+    const zzz =
+      mood === 'sleepy'
+        ? `<g class="m-z" fill="none" stroke="${t.ink}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M33 12h5l-5 6h5"/><path d="M39.5 5.5h3.4l-3.4 4h3.4" opacity=".7"/></g>`
+        : '';
     const sparkle =
       mood === 'happy'
         ? `<path class="m-twinkle" d="M39 5.5l1.2 3.3 3.3 1.2-3.3 1.2-1.2 3.3-1.2-3.3-3.3-1.2 3.3-1.2z" fill="${t.gold}"/>`
         : '';
     return (
       `<path class="m-body" d="${BODY_PATH}" fill="${t.body}" stroke="${t.bodyStroke}" stroke-width="${t.bodyStrokeWidth}"/>` +
-      `<g class="m-face"${tilt}>${cheeks}${features(mood, t)}</g>${sparkle}`
+      `<g class="m-face"${tilt}>${cheeks}${features(mood, t)}</g>${sparkle}${zzz}`
     );
   }
 

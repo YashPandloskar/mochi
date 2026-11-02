@@ -57,6 +57,7 @@ const theme = {
     music: { height: 232, from: '#040404', to: '#4a1824' }, // `to` is replaced by the album colour when there is art
     focus: { height: 222, from: '#07040f', to: '#3b1d6e' },
     needs: { height: 176, from: '#0b0803', to: '#4a3309' },
+    break: { height: 184, from: '#04100d', to: '#14503f' },
     done: {
       height: 214,
       heightWithNav: 252,
@@ -137,6 +138,24 @@ const theme = {
     turnGreenAfterSeconds: 4.5,
   },
 
+  // Mochi's personality (tray: "Mochi personality"). All of it is optional charm.
+  personality: {
+    napMinutes: 10, // idle this long (nothing happening, not hovered) and his eyes slowly close
+    nap: { closeSeconds: 2.4, zSeconds: 3.2 },
+    // break reminder after this much continuous work (a gap of breakGapMinutes without any Claude activity ends it)
+    breakMinutes: 50,
+    breakGapMinutes: 5,
+    breakSnoozeMinutes: 10,
+    eyeRestSeconds: 20, // the 20-20-20 rule: every 20 minutes look 20 feet away for 20 seconds
+    // hours are local time; "from" to "to" may wrap past midnight
+    night: { from: 23, to: 5, eyeScale: 0.68, blinkSeconds: 6.5 }, // sleepy, droopy eyes
+    morning: { from: 6, to: 10, eyeScale: 1.12, pulseScale: 0.7 }, // wider, brighter, livelier
+    dance: { seconds: 1.3, swayPx: 3, tiltDeg: 3.5, headerTiltDeg: 9, headerBobPx: 1.5 },
+    // a small celebration when "jobs today" reaches one of these
+    milestones: [5, 10, 15, 20, 30, 40, 50],
+    milestoneConfettiPieces: 26,
+  },
+
   // Game mode: while one of these programs is the active window the notch is hidden completely
   // (no eyes, no hover, no panels, no sounds or toasts). Add games by their .exe name.
   games: ['VALORANT-Win64-Shipping.exe', 'dota2.exe'],
@@ -148,6 +167,7 @@ const theme = {
       // f = frequency Hz, at = start offset s, len = length s
       done: [{ f: 659.25, at: 0, len: 0.55 }, { f: 987.77, at: 0.14, len: 0.8 }],
       needs: [{ f: 783.99, at: 0, len: 0.4 }, { f: 783.99, at: 0.22, len: 0.55 }],
+      break: [{ f: 659.25, at: 0, len: 0.5 }, { f: 523.25, at: 0.2, len: 0.9 }],
       focus: [{ f: 523.25, at: 0, len: 0.5 }, { f: 659.25, at: 0.15, len: 0.5 }, { f: 783.99, at: 0.3, len: 0.5 }, { f: 1046.5, at: 0.45, len: 0.9 }],
     },
   },
@@ -165,6 +185,15 @@ const theme = {
     appMatch: 'AppleMusic', // matched against each media session's app id
     appId: 'AppleInc.AppleMusicWin_nzyj5cx40ttqa!App', // used by "Open Apple Music"
     restartSeconds: 5, // helper restart delay if it dies
+  },
+
+  // Break reminder panel.
+  breakPanel: {
+    chipColor: '#9be8c4',
+    chipBackground: 'rgba(155, 232, 196, 0.16)',
+    buttonBackground: '#9be8c4',
+    buttonColor: '#08241a',
+    ring: '#9be8c4',
   },
 
   // Needs-approval panel.

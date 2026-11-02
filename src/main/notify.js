@@ -17,6 +17,9 @@ function toast(kind, snap) {
   } else if (kind === 'needs') {
     title = 'Claude needs you';
     body = clip(snap.needsText, 140) || 'Waiting for your approval.';
+  } else if (kind === 'break') {
+    title = 'Time for a break';
+    body = 'You have been at it a while. Stretch, or rest your eyes for 20 seconds.';
   } else {
     title = 'Focus session finished';
     body = 'Time for a break.';

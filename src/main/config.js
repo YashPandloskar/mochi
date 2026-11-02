@@ -10,6 +10,7 @@ const defaults = {
   showUsage: true, // "Show usage on Claude tile"
   music: true, // Music module (Apple Music)
   sounds: true, // soft chime on Done / Needs you / Focus finished
+  personality: true, // nap, dancing, break reminders, time-of-day moods, milestones
   gameMode: true, // hide the notch while a game from theme.games is the active window
   focusMinutes: null, // Focus countdown length in minutes; null means the theme default
   motion: null, // "subtle" or "lively"; null means the theme default

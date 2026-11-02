@@ -43,6 +43,7 @@
           <button class="pill" data-r="open" type="button">Open Apple Music</button>
         </div>
         <span class="eq mv-eq" data-r="eq"><i></i><i></i><i></i><i></i><i></i></span>
+        <div class="mv-mochi" data-r="mochiBox"></div>
       </div>
       <div class="mv-progress" data-r="progress">
         <span data-r="elapsed">0:00</span>
@@ -56,6 +57,8 @@
       </div>`;
     const r = {};
     el.querySelectorAll('[data-r]').forEach((n) => (r[n.dataset.r] = n));
+    const dancer = Mochi.create({ mood: 'wink', size: 44 });
+    r.mochiBox.appendChild(dancer.el);
     el.appendChild(Nav.create().el);
 
     const send = (cmd) => window.mochi.musicCommand(cmd);
@@ -86,6 +89,11 @@
 
     return {
       el,
+      // he sways while the music plays, naps or looks sleepy otherwise
+      setLook({ napping, dancing, look }) {
+        dancer.setMood(dancing ? 'happy' : napping || look === 'night' ? 'sleepy' : 'wink');
+        r.mochiBox.classList.toggle('dancing', !!dancing);
+      },
       update(next) {
         m = next;
         const live = !!(m && m.enabled && m.status && m.status !== 'none');
