@@ -80,7 +80,8 @@ u = mk().compute();
 assert.strictEqual(u.mode, 'fallback');
 assert.strictEqual(u.approx, true);
 assert.ok(u.tokens > 0);
-ok('all windows expired -> approximate fallback');
+assert.ok(!('cost' in u), 'no dollar estimate on a subscription');
+ok('all windows expired -> approximate fallback, tokens only (no $ on a plan)');
 
 fs.rmSync(path.join(dir, 'usage.json'));
 assert.strictEqual(mk().compute().mode, 'fallback');
@@ -88,7 +89,9 @@ ok('no usage.json (status line never fired) -> fallback');
 
 writeUsage({ fiveHour: { pct: 39, resetsAt: soon }, sevenDay: null });
 process.env.ANTHROPIC_API_KEY = 'sk-test';
-assert.strictEqual(mk().compute().mode, 'fallback');
+const apiU = mk().compute();
+assert.strictEqual(apiU.mode, 'fallback');
+assert.ok(apiU.cost > 0, 'API-key billing keeps the dollar estimate');
 delete process.env.ANTHROPIC_API_KEY;
 fs.writeFileSync(claudeJson, JSON.stringify({}));
 assert.strictEqual(mk().compute().mode, 'fallback');

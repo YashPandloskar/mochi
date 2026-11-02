@@ -106,7 +106,7 @@
         };
         box.innerHTML = row('5h', usage.fiveHour) + row('Week', usage.sevenDay);
       } else {
-        const cost = usage.cost >= 0.005 ? ` · ~$${usage.cost.toFixed(2)}` : '';
+        const cost = usage.cost >= 0.005 ? ` · ~$${usage.cost.toFixed(2)}` : ''; // only sent on API-key billing
         box.innerHTML = `<div class="u-line">~${tokensText(usage.tokens)} tokens today${cost}</div>`;
       }
     }

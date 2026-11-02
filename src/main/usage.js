@@ -83,7 +83,8 @@ class Usage extends EventEmitter {
 
   compute() {
     if (!this.enabled) return { enabled: false };
-    if (!this.apiKeyBilling()) {
+    const apiKey = this.apiKeyBilling();
+    if (!apiKey) {
       const w = this.readWindows();
       if (w) return { enabled: true, mode: 'bars', ...w };
     }
@@ -92,7 +93,9 @@ class Usage extends EventEmitter {
       this.scanResult = this.scanner.scan();
       this.lastScan = now;
     }
-    return { enabled: true, mode: 'fallback', approx: true, ...this.scanResult };
+    // A dollar estimate only means something on API-key billing; on a plan nothing is billed per token.
+    const { tokens, cost } = this.scanResult;
+    return { enabled: true, mode: 'fallback', approx: true, tokens, ...(apiKey ? { cost } : {}) };
   }
 
   refresh() {
