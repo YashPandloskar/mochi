@@ -84,7 +84,8 @@ class Notes extends EventEmitter {
   constructor({ file }) {
     super();
     this.file = file;
-    this.lastText = null; // the text last written or read, to tell our own writes from your edits
+    this.lastText = null; // the text last successfully written or read, to tell our own writes from your edits
+    this.pending = null; // the text being written right now
     this.timer = null;
     this.watcher = null;
   }
@@ -104,22 +105,44 @@ class Notes extends EventEmitter {
     return parse(text);
   }
 
+  // Writes to a temp file and renames it over the real one, so a crash never leaves half a file.
+  // Windows sometimes refuses the rename for a moment (antivirus, another program with the file open):
+  // retry a few times, then fall back to overwriting the file directly. Throws only if nothing works.
   writeAtomic(text) {
     const tmp = `${this.file}.${process.pid}.tmp`;
-    fs.writeFileSync(tmp, text);
+    let lastError;
+    for (let attempt = 0; attempt < 6; attempt++) {
+      try {
+        fs.writeFileSync(tmp, text);
+        fs.renameSync(tmp, this.file);
+        return;
+      } catch (e) {
+        lastError = e;
+        if (attempt < 5) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 40 * (attempt + 1)); // 40, 80, 120... ms
+      }
+    }
     try {
-      fs.renameSync(tmp, this.file);
+      fs.rmSync(tmp, { force: true });
+      fs.writeFileSync(this.file, text); // not atomic, but better than losing the change
     } catch {
-      fs.renameSync(tmp, this.file); // Windows can refuse a rename onto a file that is open: retry once
+      throw lastError;
     }
   }
 
+  // Returns true when the file was written, false when nothing changed. Throws if it could not be written;
+  // in that case nothing is recorded as saved, so the next save tries again and a stale file is never
+  // mistaken for the truth.
   save(data) {
     const text = serialize(clean(data));
     if (text === this.lastText) return false;
-    this.lastText = text; // set first so the file watcher recognises this as our own write
-    fs.mkdirSync(path.dirname(this.file), { recursive: true });
-    this.writeAtomic(text);
+    this.pending = text; // so the file watcher recognises this write as ours while it happens
+    try {
+      fs.mkdirSync(path.dirname(this.file), { recursive: true });
+      this.writeAtomic(text);
+    } finally {
+      this.pending = null;
+    }
+    this.lastText = text;
     return true;
   }
 
@@ -142,7 +165,7 @@ class Notes extends EventEmitter {
     } catch {
       return;
     }
-    if (text === this.lastText) return; // our own write
+    if (text === this.lastText || text === this.pending) return; // our own write
     this.lastText = text;
     this.emit('external', parse(text));
   }

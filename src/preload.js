@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('mochi', {
   notesSave: (data) => ipcRenderer.send('notes:save', data), // { todos: [{ text, done }], note }
   notesOpen: () => ipcRenderer.send('notes:open'), // opens notes.md in your editor
   onNotes: (cb) => ipcRenderer.on('notes', (_e, d) => cb(d)),
+  onNotesStatus: (cb) => ipcRenderer.on('notes:status', (_e, s) => cb(s)), // { ok } or { ok: false, message }
   chatSend: (text, image) => ipcRenderer.send('chat:send', image ? { text, image } : text),
   captureScreen: () => ipcRenderer.invoke('chat:capture'), // only when you press the camera button
   chatStop: () => ipcRenderer.send('chat:stop'),

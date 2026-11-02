@@ -75,6 +75,7 @@ takes over (it has no nav bar). The nav bar can be taken off the Working and Don
 The **Notes** tab (checklist icon) has a to-do list on the left and a quick note on the right. A strip under the Home tiles shows how far you are ("To-do · 2 of 5") and your next task; click it to open the tab.
 
 - **Tasks:** type in "Add a task…" and press Enter. Click the box to tick a task, double-click its text to rename it (an emptied task is deleted), use the ✕ to delete, and **Clear done** removes the ticked ones.
+- **Nothing typed is lost:** a task you typed but did not confirm with Enter is added as soon as you click away, switch tab or the notch closes. **Esc** cancels instead. Every change is written to the file immediately; if Windows refuses a write, mochi retries and shows a red warning in the Notes tab until it succeeds.
 - **Quick note:** just type; it is saved a moment after you stop.
 - **It is a plain file:** `%APPDATA%\mochi\notes.md`. **Open file** opens it in your editor, and changes made there appear in the notch within a second. The format is simple:
 

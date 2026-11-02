@@ -10,6 +10,7 @@
     const el = document.createElement('div');
     el.className = 'notes-view';
     el.innerHTML = `
+      <div class="nt-status" data-r="status" hidden></div>
       <div class="nt-cols">
         <div class="nt-col nt-todo">
           <div class="nt-head"><b>To-do</b><span data-r="count">Nothing yet</span><button class="nt-link" data-r="clear" type="button" title="Remove the ticked tasks">Clear done</button></div>
@@ -132,8 +133,21 @@
       r.list.scrollTop = r.list.scrollHeight;
       saveNow();
     }
+    // Text typed in the box is never lost: leaving the box (clicking elsewhere, another tab, the tray) adds it
+    // as a task. Esc cancels instead.
+    let cancelling = false;
+    r.add.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        cancelling = true;
+        r.add.value = '';
+      }
+    }, true);
     r.add.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') add();
+    });
+    r.add.addEventListener('blur', () => {
+      if (cancelling) cancelling = false;
+      else add();
     });
     r.plus.addEventListener('click', add);
     r.clear.addEventListener('click', () => {
@@ -147,6 +161,13 @@
 
     return {
       el,
+      // adds whatever is typed in the "Add a task" box (called when you leave the tab or the notch closes)
+      commit: () => add(),
+      // from main: saving to the file failed (it keeps retrying) or recovered
+      setStatus(s) {
+        r.status.hidden = !s || s.ok !== false;
+        if (!r.status.hidden) r.status.textContent = `Could not save your notes (${s.message || 'unknown error'}). Mochi keeps trying; your changes are still shown here.`;
+      },
       // from main: the file was read at start-up, or changed by another editor
       update(d) {
         if (!d) return;

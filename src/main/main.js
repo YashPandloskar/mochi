@@ -150,14 +150,26 @@ app.whenReady().then(() => {
     pushNotes();
   });
   notes.watch();
-  ipcMain.on('notes:save', (_e, data) => {
+  // A failed save is reported to the Notes tab (so you know) and retried a few times on its own.
+  let notesRetry = null;
+  let notesFailing = false;
+  const saveNotes = (data, tries = 0) => {
+    clearTimeout(notesRetry);
     try {
       notes.save(data);
       notesData = Notes.clean(data);
+      if (notesFailing) {
+        notesFailing = false;
+        windowMgr.send('notes:status', { ok: true });
+      }
     } catch (e) {
-      console.error('notes save:', e.message);
+      console.error('notes save failed:', e.code || e.message);
+      notesFailing = true;
+      windowMgr.send('notes:status', { ok: false, message: e.code || e.message });
+      if (tries < 4) notesRetry = setTimeout(() => saveNotes(data, tries + 1), 2000 * (tries + 1));
     }
-  });
+  };
+  ipcMain.on('notes:save', (_e, data) => saveNotes(data));
   ipcMain.on('notes:open', () => shell.openPath(notes.file));
 
   // ---------- chat (Claude through your own Claude Code login) ----------

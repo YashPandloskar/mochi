@@ -202,6 +202,7 @@
 
   // Tapping a nav icon switches the panel.
   Nav.onSelect((id) => {
+    notesView.commit(); // a half-typed task is kept when you leave the Notes tab
     if (id === tab) return;
     tab = id;
     if (!expanded) return;
@@ -265,6 +266,7 @@
 
   function collapse() {
     if (!expanded) return;
+    notesView.commit(); // keep a half-typed task
     window.mochi.focusWindow(false); // hand keyboard focus back (it is only taken while typing in Chat)
     clearTimeout(contentTimer);
     notch.classList.remove('content-visible');
@@ -495,9 +497,11 @@
     chatView.handle(ev);
   });
   window.mochi.onWindowBlur(() => {
+    notesView.commit();
     chatView.onWindowBlur();
     Typing.reset();
   });
+  window.mochi.onNotesStatus((s) => notesView.setStatus(s));
   window.mochi.onNotes((d) => {
     notesView.update(d);
     home.update({ notes: d });
