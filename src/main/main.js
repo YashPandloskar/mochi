@@ -11,6 +11,7 @@ const Music = require('./music');
 const GameMode = require('./gamemode');
 const notify = require('./notify');
 const BreakTimer = require('./breaks');
+const Chat = require('./chat');
 
 app.setName('mochi');
 // Windows toasts need an app identity; an unpackaged Electron app uses its own executable path.
@@ -120,6 +121,14 @@ app.whenReady().then(() => {
     pushSettings();
   });
 
+  // ---------- chat (Claude through your own Claude Code login) ----------
+  const chat = new Chat();
+  chat.on('event', (ev) => windowMgr.send('chat', ev));
+  ipcMain.on('chat:send', (_e, text) => typeof text === 'string' && chat.send(text));
+  ipcMain.on('chat:stop', () => chat.stop());
+  ipcMain.on('chat:new', () => chat.reset());
+  ipcMain.on('window:focus', (_e, on) => windowMgr.setFocus(!!on));
+
   // ---------- renderer requests ----------
   ipcMain.on('music:command', (_e, cmd) => (cmd === 'open' ? music.open() : music.command(cmd)));
   // Allow / Deny buttons in the notch. id -1 is the tray "Preview state" sample: just close it.
@@ -208,6 +217,7 @@ app.whenReady().then(() => {
   app.on('before-quit', () => {
     globalShortcut.unregisterAll();
     music.stop();
+    chat.reset();
     breaks.stop();
     game.stop();
     usage.stop();

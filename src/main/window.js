@@ -64,6 +64,11 @@ function create(cfg) {
   // Windows can slip another window (for example a maximized Claude) above an always-on-top window.
   // Re-assert the top position once a second; it does not take focus.
   topTimer = setInterval(() => visible && win && !win.isDestroyed() && win.moveTop(), 1000);
+  win.on('blur', () => {
+    if (!win.isFocusable()) return;
+    win.setFocusable(false);
+    win.webContents.send('window:blur');
+  });
   win.on('closed', () => {
     clearInterval(pollTimer);
     clearInterval(topTimer);
@@ -97,6 +102,19 @@ function poll() {
   win.webContents.send('hover', inside);
 }
 
+// The notch never takes keyboard focus, except while you type in the Chat tab.
+// Focus is handed back as soon as the window loses it (or you press Esc).
+function setFocus(on) {
+  if (!win || win.isDestroyed()) return;
+  if (on) {
+    win.setFocusable(true);
+    win.focus();
+  } else {
+    win.blur();
+    win.setFocusable(false);
+  }
+}
+
 // Hides the notch completely (game mode / paused) or brings it back, without stealing focus.
 function setVisible(on) {
   if (on === visible) return;
@@ -124,4 +142,4 @@ function reposition(monitor) {
   if (win) place(monitor);
 }
 
-module.exports = { create, setHitSize, send, reposition, pickDisplay, setVisible };
+module.exports = { create, setHitSize, send, reposition, pickDisplay, setVisible, setFocus };

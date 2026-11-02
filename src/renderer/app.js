@@ -91,6 +91,11 @@
     '--dance-bob': theme.personality.dance.headerBobPx + 'px',
     '--nap-s': theme.personality.nap.closeSeconds + 's',
     '--z-s': theme.personality.nap.zSeconds + 's',
+    '--chat-user': theme.chat.userBubble,
+    '--chat-text': theme.chat.assistantText,
+    '--chat-code': theme.chat.codeBackground,
+    '--chat-input': theme.chat.inputBackground,
+    '--chat-accent': theme.chat.accent,
     '--lean': theme.lively.leanScale,
     '--lean-s': theme.lively.leanSeconds + 's',
     '--dots-s': theme.lively.typingDotsSeconds + 's',
@@ -146,7 +151,12 @@
       scheduleCollapse();
     },
   });
-  const views = { home, working, done, needs, claudeIdle, music, focus, break: brk };
+  const chatView = window.ChatView.create({
+    onPinChange: () => {
+      if (!chatView.pinned() && !hover) scheduleCollapse();
+    },
+  });
+  const views = { home, working, done, needs, claudeIdle, music, focus, break: brk, chat: chatView };
 
   content.append(...Object.values(views).map((v) => v.el));
 
@@ -159,7 +169,10 @@
   }
 
   // The tab to start on when the notch opens or the state changes.
-  const defaultTab = () => (state === 'working' || state === 'done' ? 'claude' : 'home');
+  const defaultTab = () => {
+    if (state === 'working' || state === 'done') return 'claude';
+    return chatView.recentlyActive(theme.chat.reopenMinutes) ? 'chat' : 'home'; // back to the conversation you were having
+  };
 
   function showView() {
     const key = viewKey();
@@ -243,6 +256,7 @@
 
   function collapse() {
     if (!expanded) return;
+    window.mochi.focusWindow(false); // hand keyboard focus back (it is only taken while typing in Chat)
     clearTimeout(contentTimer);
     notch.classList.remove('content-visible');
     contentTimer = setTimeout(() => {
@@ -257,7 +271,7 @@
   function scheduleCollapse() {
     clearTimeout(collapseTimer);
     collapseTimer = setTimeout(() => {
-      if (!hover && !autoOpens()) collapse();
+      if (!hover && !autoOpens() && !chatView.pinned()) collapse();
     }, ms(theme.timings.collapseDelay));
   }
 
@@ -462,6 +476,11 @@
     } else expand();
   });
   window.mochi.onPersonality((kind) => Personality.preview(kind));
+  window.mochi.onChat((ev) => {
+    poke();
+    chatView.handle(ev);
+  });
+  window.mochi.onWindowBlur(() => chatView.onWindowBlur());
 
   content.style.visibility = 'hidden';
   applyGeometry();

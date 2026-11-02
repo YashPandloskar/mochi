@@ -10,6 +10,12 @@ contextBridge.exposeInMainWorld('mochi', {
   musicCommand: (cmd) => ipcRenderer.send('music:command', cmd), // playpause | next | prev | open
   onSettings: (cb) => ipcRenderer.on('settings', (_e, s) => cb(s)),
   onChime: (cb) => ipcRenderer.on('chime', (_e, kind) => cb(kind)),
+  chatSend: (text) => ipcRenderer.send('chat:send', text),
+  chatStop: () => ipcRenderer.send('chat:stop'),
+  chatNew: () => ipcRenderer.send('chat:new'),
+  onChat: (cb) => ipcRenderer.on('chat', (_e, ev) => cb(ev)),
+  focusWindow: (on) => ipcRenderer.send('window:focus', on), // the notch takes keyboard focus only while you type
+  onWindowBlur: (cb) => ipcRenderer.on('window:blur', () => cb()),
   onBreak: (cb) => ipcRenderer.on('break', (_e, info) => cb(info)),
   breakAnswer: (action) => ipcRenderer.send('break:answer', action), // ok | snooze
   onPersonality: (cb) => ipcRenderer.on('personality', (_e, kind) => cb(kind)), // tray previews

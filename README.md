@@ -62,11 +62,23 @@ The pill at the bottom of the panel switches the view. Click an icon:
 | Home | Date, time and the Claude / Music / Focus tiles |
 | Claude | The live work panel (timer, step, diff, progress) or, when idle, your last job and its message |
 | Music | A bigger Apple Music player: art, title, artist, progress with times, previous / play-pause / next. The panel takes the album's colour |
+| Chat | Day-to-day questions to Claude: plan something, explain something, draft a message (see below) |
 | Focus | The countdown with a progress ring (shared with the Focus tile). **− / +** change the length in 5 minute steps (5 to 120, remembered); locked while counting. Default 25: `home.focusMinutes` in `src/theme.js` |
 
 The panel opens on Home when idle and on Claude while a job runs or has just finished. Needs-you always
 takes over (it has no nav bar). The nav bar can be taken off the Working and Done panels with
 `nav.onPanels: false` in `src/theme.js` (they then go back to heights 200 and 214).
+
+## Chat
+
+The **Chat** tab (message icon) is a plain conversation with Claude for everyday questions. Click the input, type, press **Enter** (Shift+Enter for a new line). **Stop** ends an answer early, **New chat** starts over, and the suggestion chips fill the input for you.
+
+- **How it works:** each message runs your own Claude Code (`claude -p`) in the background, so it uses **your login and your plan**; no API key and nothing else is installed. Answers count against your normal Claude usage limits.
+- **Memory:** the conversation continues until you press New chat. The notch reopens on Chat if you chatted in the last 10 minutes.
+- **Plain chat only:** tools are off (it cannot read files or run commands), and your personal Claude Code settings, plugins and hooks are not loaded, so a chat never shows up as a Working / Done job and never counts toward "jobs today". It runs in an empty temporary folder.
+- **Keyboard focus:** the notch normally never takes keyboard focus. It takes it only when you click the input, and gives it back when you press **Esc**, click another window, or the notch closes. While you type or an answer arrives, the panel stays open.
+- **Not signed in?** Run `claude` once in a terminal and sign in.
+- Answers are shown as formatted text (lists, bold, code blocks). Anything that looks like HTML is displayed as plain text, never run.
 
 ## While the notch is collapsed
 

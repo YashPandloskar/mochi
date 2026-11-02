@@ -14,7 +14,7 @@ const theme = {
   },
 
   // Fixed transparent window the notch animates inside (extra room for spring overshoot).
-  window: { width: 600, height: 280 },
+  window: { width: 600, height: 400 }, // tall enough for the Chat panel plus spring overshoot
 
   collapsed: {
     width: 120,
@@ -43,6 +43,7 @@ const theme = {
       { id: 'claude', label: 'Claude', icon: 'sparkle' },
       { id: 'music', label: 'Music', icon: 'music' },
       { id: 'focus', label: 'Focus', icon: 'timer' },
+      { id: 'chat', label: 'Chat', icon: 'chat' },
     ],
     // Show the nav bar under the Working and Done panels too (they then use heightWithNav).
     onPanels: true,
@@ -56,6 +57,7 @@ const theme = {
     claudeIdle: { height: 200, heightWithNav: 240, from: '#0b0604', to: '#4a2410' },
     music: { height: 232, from: '#040404', to: '#4a1824' }, // `to` is replaced by the album colour when there is art
     focus: { height: 222, from: '#07040f', to: '#3b1d6e' },
+    chat: { height: 340, from: '#060606', to: '#1d1309' },
     needs: { height: 176, from: '#0b0803', to: '#4a3309' },
     break: { height: 184, from: '#04100d', to: '#14503f' },
     done: {
@@ -185,6 +187,26 @@ const theme = {
     appMatch: 'AppleMusic', // matched against each media session's app id
     appId: 'AppleInc.AppleMusicWin_nzyj5cx40ttqa!App', // used by "Open Apple Music"
     restartSeconds: 5, // helper restart delay if it dies
+  },
+
+  // Chat tab: day-to-day questions to Claude, through your own Claude Code login (no API key).
+  chat: {
+    maxChars: 20000, // longest message you can send
+    reopenMinutes: 10, // the notch reopens on Chat if you chatted this recently
+    thinkingTimeoutSeconds: 120, // no output for this long and the request is stopped
+    userBubble: 'rgba(224, 121, 58, 0.22)',
+    assistantText: '#f4f1ec',
+    codeBackground: 'rgba(0, 0, 0, 0.38)',
+    inputBackground: 'rgba(255, 255, 255, 0.08)',
+    accent: '#e0793a',
+    systemPrompt:
+      'You are Claude, chatting with the user through a small panel on their desktop. Keep answers short and easy to scan unless they ask for depth. For plans, use short numbered steps. You cannot use tools or access files here.',
+    // chips under the empty chat: they fill the input so you can finish the sentence
+    suggestions: [
+      { label: 'Plan my day', text: 'Help me plan my day. Here is what I need to do: ' },
+      { label: 'Explain something simply', text: 'Explain this to me simply: ' },
+      { label: 'Help me write a message', text: 'Help me write a message to ' },
+    ],
   },
 
   // Break reminder panel.

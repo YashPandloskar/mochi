@@ -2,6 +2,8 @@
 # PermissionRequest events are held open until Allow/Deny and the decision JSON is printed to stdout.
 # Any failure (mochi not running, timeout, bad config) exits 0 silently so Claude Code carries on normally.
 $ErrorActionPreference = 'Stop'
+# mochi's own Chat tab runs claude with this set: never report those runs as Claude jobs
+if ($env:MOCHI_CHAT) { exit 0 }
 try {
     $reader = New-Object System.IO.StreamReader([Console]::OpenStandardInput(), [System.Text.Encoding]::UTF8)
     $json = $reader.ReadToEnd()
