@@ -157,3 +157,17 @@ html, body {
   0% { transform: translate(0, 0) scale(1); opacity: 1; }
   100% { transform: translate(var(--dx), var(--dy)) scale(0.3); opacity: 0; }
 }
+
+/* ---------- lively motion extras (the default "subtle" mode never shows these) ---------- */
+.sweep {
+  position: absolute;
+  left: 50%;
+  bottom: 5px;
+  width: 52px;
+  height: 1.5px;
+  margin-left: -26px;
+  border-radius: 1px;
+  background: linear-gradient(90deg, transparent, var(--ec), transparent);
+  animation: sweep var(--sweep-s) ease-in-out infinite alternate;
+}
+@keyframes sweep { from { transform: translateX(-20px); opacity: 0.35; } to { transform: translateX(20px); opacity: 0.9; } }

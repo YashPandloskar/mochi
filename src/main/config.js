@@ -9,6 +9,9 @@ const defaults = {
   token: null,
   showUsage: true, // "Show usage on Claude tile"
   music: true, // Music module (Apple Music)
+  sounds: true, // soft chime on Done / Needs you / Focus finished
+  gameMode: true, // hide the notch while a game from theme.games is the active window
+  motion: null, // "subtle" or "lively"; null means the theme default
   // the user's own statusLine, saved by the hook installer so it can be chained and restored
   statusLineOriginal: null,
   jobs: { date: '', count: 0 },

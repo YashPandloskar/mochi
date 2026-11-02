@@ -8,6 +8,9 @@ contextBridge.exposeInMainWorld('mochi', {
   onUsage: (cb) => ipcRenderer.on('usage', (_e, u) => cb(u)),
   onMusic: (cb) => ipcRenderer.on('music', (_e, m) => cb(m)),
   musicCommand: (cmd) => ipcRenderer.send('music:command', cmd), // playpause | next | prev | open
+  onSettings: (cb) => ipcRenderer.on('settings', (_e, s) => cb(s)),
+  onChime: (cb) => ipcRenderer.on('chime', (_e, kind) => cb(kind)),
+  focusDone: () => ipcRenderer.send('focus:done'),
   resolveApproval: (id, decision) => ipcRenderer.send('approval:resolve', { id, decision }),
   onSession: (cb) => ipcRenderer.on('session', (_e, snap) => cb(snap)),
 });

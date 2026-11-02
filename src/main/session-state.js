@@ -213,6 +213,21 @@ class SessionState extends EventEmitter {
     return base;
   }
 
+  // Brings back a Done that finished while the notch was hidden (game mode / paused).
+  replayDone() {
+    const s = this.sessions.get(this.currentId);
+    if (!s || !s.finishedAt || s.state !== 'idle') return false;
+    s.state = 'done';
+    clearTimeout(s.doneTimer);
+    s.doneTimer = setTimeout(() => {
+      s.state = 'idle';
+      s.startedAt = null;
+      this.emitChange();
+    }, theme.timings.doneToIdleSeconds * 1000);
+    this.emitChange();
+    return true;
+  }
+
   emitChange() {
     this.emit('change', this.snapshot());
   }
@@ -229,6 +244,7 @@ class SessionState extends EventEmitter {
     const demo = this.override ? this.demo(this.override) : null; // tray "Preview state" shows sample content
     return {
       state,
+      preview: !!this.override, // tray "Preview state": no sounds or toasts
       ...(demo || {
         project: s ? s.project : '',
         startedAt: s ? s.startedAt : null,

@@ -54,6 +54,7 @@ const theme = {
     doneTurnGreenAfter: 4.5,
     doneCrossfade: 0.8,
     hoverPollMs: 50,
+    hoverDwell: 0.3, // the pointer must rest on the collapsed notch this long before it expands
     doneToIdleSeconds: 9, // "Done" holds this long (blue, then green) before the session returns to idle
     staleWorkingSeconds: 300, // no events for this long while working: fall back to idle
     approvalTimeoutSeconds: 100, // then Claude Code's normal prompt takes over
@@ -109,6 +110,29 @@ const theme = {
     bubbleBackground: 'rgba(255, 255, 255, 0.12)',
     bubbleChars: 170,
     turnGreenAfterSeconds: 4.5,
+  },
+
+  // Game mode: while one of these programs is the active window the notch is hidden completely
+  // (no eyes, no hover, no panels, no sounds or toasts). Add games by their .exe name.
+  games: ['VALORANT-Win64-Shipping.exe', 'dota2.exe'],
+
+  // Soft chime for Done / Needs you / Focus finished. Generated in code, no audio files.
+  sounds: {
+    volume: 0.16,
+    notes: {
+      // f = frequency Hz, at = start offset s, len = length s
+      done: [{ f: 659.25, at: 0, len: 0.55 }, { f: 987.77, at: 0.14, len: 0.8 }],
+      needs: [{ f: 783.99, at: 0, len: 0.4 }, { f: 783.99, at: 0.22, len: 0.55 }],
+      focus: [{ f: 523.25, at: 0, len: 0.5 }, { f: 659.25, at: 0.15, len: 0.5 }, { f: 783.99, at: 0.3, len: 0.5 }, { f: 1046.5, at: 0.45, len: 0.9 }],
+    },
+  },
+
+  // Extras added by the "lively" motion setting (the default "subtle" adds none of them).
+  lively: {
+    workingEyes: { driftPx: 7, driftSeconds: 2.6, sweepSeconds: 2.2 }, // scanning eyes + a thin sweep line
+    typingDotsSeconds: 1.2,
+    leanScale: 1.05, // Mochi leans in towards the laptop
+    leanSeconds: 3.2,
   },
 
   // Music module: Apple Music desktop app only. Every other media session is ignored.

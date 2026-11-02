@@ -175,6 +175,7 @@
         if (left <= 0) {
           focus.endsAt = 0;
           focus.showDoneUntil = Date.now() + 8000;
+          window.mochi.focusDone(); // main plays the chime and shows the toast unless paused / in a game
         } else {
           r.focusTime.textContent = clock(left);
           r.focusSub.textContent = `${Math.ceil(left / 60)} min left`;

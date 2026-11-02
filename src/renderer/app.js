@@ -68,6 +68,9 @@
     '--wobble-deg': theme.needs.wobbleDeg + 'deg',
     '--wobble-s': theme.needs.wobbleSeconds + 's',
     '--q-s': theme.needs.questionSeconds + 's',
+    '--lean': theme.lively.leanScale,
+    '--lean-s': theme.lively.leanSeconds + 's',
+    '--dots-s': theme.lively.typingDotsSeconds + 's',
   };
   for (const [k, v] of Object.entries(vars)) root.setProperty(k, v);
   notch.classList.toggle('glow', theme.notchGlow);
@@ -79,6 +82,8 @@
   let contentTimer = null;
   let greenTimer = null;
   let lastSession = null;
+  let motion = theme.motion; // "subtle" or "lively" (tray setting overrides the theme default)
+  document.documentElement.dataset.motion = motion;
 
   // Needs-you and Done open by themselves; Working stays as eyes until you hover.
   const autoOpens = () => state === 'needs' || state === 'done';
@@ -182,8 +187,10 @@
     set('--g-far', shadow(g.far, cfg.color));
     set('--g-near-p', shadow(g.nearPulse, cfg.color));
     set('--g-far-p', shadow(g.farPulse, cfg.color));
-    set('--drift', (cfg.driftPx || 0) + 'px');
-    set('--drift-s', (cfg.driftSeconds || 5) + 's');
+    const lively = motion === 'lively' && state === 'working' ? theme.lively.workingEyes : null;
+    set('--drift', (lively ? lively.driftPx : cfg.driftPx || 0) + 'px');
+    set('--drift-s', (lively ? lively.driftSeconds : cfg.driftSeconds || 5) + 's');
+    set('--sweep-s', (lively ? lively.sweepSeconds : 2) + 's');
     set('--hop', (cfg.hopPx || 0) + 'px');
     set('--hop-s', (cfg.hopSeconds || 1.8) + 's');
     set('--arc', (cfg.arcBorder || 3) + 'px');
@@ -197,6 +204,12 @@
       const eye = document.createElement('div');
       eye.className = 'eye';
       eyesEl.appendChild(eye);
+    }
+    if (lively) {
+      // lively only: a thin scanning line under the eyes (subtle mode has no sweep line)
+      const sweep = document.createElement('div');
+      sweep.className = 'sweep';
+      eyesEl.appendChild(sweep);
     }
     if (state === 'done') {
       const sparks = document.createElement('div');
@@ -252,6 +265,14 @@
     done.update(session);
     needs.update(session);
   });
+  window.mochi.onSettings((s) => {
+    if (s.motion && s.motion !== motion) {
+      motion = s.motion;
+      document.documentElement.dataset.motion = motion;
+      buildEyes();
+    }
+  });
+  window.mochi.onChime((kind) => window.Chime.play(kind));
   window.mochi.onUsage((usage) => home.update({ usage }));
   window.mochi.onMusic((music) => home.update({ music }));
 

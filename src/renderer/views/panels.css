@@ -159,3 +159,15 @@
 .handback { margin-left: auto; font-size: 10px; color: var(--muted); white-space: nowrap; }
 .answer-in-claude .btn { display: none; }
 .answer-in-claude .handback { margin-left: 0; }
+
+/* ---------- lively motion extras ---------- */
+[data-motion='lively'] .w-step::after {
+  content: '';
+  display: inline-block;
+  width: 1.4em;
+  text-align: left;
+  animation: typing-dots var(--dots-s) steps(1) infinite;
+}
+@keyframes typing-dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
+[data-motion='lively'] .lap-breathe { animation: lap-lean var(--lean-s) ease-in-out infinite; }
+@keyframes lap-lean { 0%, 100% { transform: scale(1) translateY(0); } 50% { transform: scale(var(--lean)) translateY(-1.5px); } }
