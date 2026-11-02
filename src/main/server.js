@@ -56,6 +56,7 @@ function start({ port, token, state }) {
       if (!tokenOk(req.headers['x-mochi-token'], token)) return reply(401);
 
       if (req.method === 'GET' && req.url === '/health') return reply(200, '{"ok":true}');
+      if (req.method === 'GET' && req.url === '/state') return reply(200, JSON.stringify(state.snapshot()));
       if (req.method !== 'POST') return reply(405);
 
       let ev;
