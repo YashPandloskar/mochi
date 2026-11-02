@@ -40,10 +40,14 @@ try {
   const rl = data && data.rate_limits;
   // Diagnostics only: when this ran and which top-level field names arrived (never values).
   fs.mkdirSync(dir, { recursive: true });
-  atomicWrite(
-    path.join(dir, 'statusline-seen.json'),
-    JSON.stringify({ at: new Date().toISOString(), keys: Object.keys(data || {}), hasRateLimits: !!rl, rateLimitKeys: rl ? Object.keys(rl) : [] })
-  );
+  const seenFile = path.join(dir, 'statusline-seen.json');
+  let history = [];
+  try {
+    history = JSON.parse(fs.readFileSync(seenFile, 'utf8'));
+    if (!Array.isArray(history)) history = [];
+  } catch {}
+  history.push({ at: new Date().toISOString(), keyCount: Object.keys(data || {}).length, hasRateLimits: !!rl, rateLimitKeys: rl ? Object.keys(rl) : [], hasCost: !!(data && data.cost) });
+  atomicWrite(seenFile, JSON.stringify(history.slice(-6)));
   if (rl) {
     const fiveHour = windowOf(rl.five_hour);
     const sevenDay = windowOf(rl.seven_day);
