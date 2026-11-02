@@ -367,3 +367,22 @@
 .chat-cam:hover { background: rgba(255, 255, 255, 0.18); }
 .chat-cam.busy { animation: slow-pulse 0.8s ease-in-out infinite; pointer-events: none; }
 .msg-img { display: block; max-width: 100%; max-height: 90px; margin-bottom: 6px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.14); }
+
+/* ---------- focus tab: pomodoro ---------- */
+.fv-steps { flex-direction: column; align-items: stretch; gap: 5px; margin-top: 2px; }
+.fv-step-row { display: flex; align-items: center; gap: 8px; }
+.fv-step-row em { width: 38px; font-style: normal; font-size: 11px; color: var(--muted); }
+.fv-step-row span { min-width: 44px; text-align: center; font-size: 12px; font-variant-numeric: tabular-nums; }
+.fv-actions { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.fv-actions .fv-go { margin-top: 0; }
+.fv-cycle { border: 1px solid rgba(255, 255, 255, 0.22); border-radius: 99px; padding: 7px 13px; background: transparent; color: var(--muted); font: inherit; font-size: 11.5px; font-weight: 600; cursor: pointer; }
+.fv-cycle.on { background: rgba(201, 167, 255, 0.2); border-color: rgba(201, 167, 255, 0.5); color: #e6d7ff; }
+.fv-cycle.locked { opacity: 0.4; pointer-events: none; }
+.fv-sessions { display: flex; align-items: center; justify-content: center; gap: 8px; margin: -2px 0 6px; font-size: 11px; color: var(--muted); }
+.fv-dots { display: inline-flex; gap: 4px; align-items: center; }
+.fv-dots i { width: 8px; height: 8px; border-radius: 50%; background: #c9a7ff; }
+.fv-dots b { font-size: 10px; color: var(--text); margin-left: 2px; }
+.focus-view .fv-row { margin-top: 0; }
+.focus-view.break .fv-arc { stroke: var(--brk-ring); }
+.focus-view.break .fv-go { color: #0f5a3a; }
+.focus-view.break .fv-dots i { background: #6fe3a8; }

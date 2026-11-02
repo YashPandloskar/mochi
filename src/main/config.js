@@ -13,6 +13,9 @@ const defaults = {
   personality: true, // nap, dancing, break reminders, time-of-day moods, milestones
   gameMode: true, // hide the notch while a game from theme.games is the active window
   focusMinutes: null, // Focus countdown length in minutes; null means the theme default
+  focusBreakMinutes: null, // Pomodoro break length; null means the theme default
+  focusCycle: null, // Pomodoro cycles on/off; null means the theme default
+  focusSessions: { date: '', count: 0 }, // completed focus periods today
   motion: null, // "subtle" or "lively"; null means the theme default
   // the user's own statusLine, saved by the hook installer so it can be chained and restored
   statusLineOriginal: null,

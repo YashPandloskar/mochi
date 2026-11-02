@@ -20,8 +20,9 @@ contextBridge.exposeInMainWorld('mochi', {
   onBreak: (cb) => ipcRenderer.on('break', (_e, info) => cb(info)),
   breakAnswer: (action) => ipcRenderer.send('break:answer', action), // ok | snooze
   onPersonality: (cb) => ipcRenderer.on('personality', (_e, kind) => cb(kind)), // tray previews
-  setFocusMinutes: (m) => ipcRenderer.send('focus:minutes', m),
-  focusDone: () => ipcRenderer.send('focus:done'),
+  focusConfig: (c) => ipcRenderer.send('focus:config', c), // { focusMinutes, breakMinutes, cycle }
+  focusSession: (s) => ipcRenderer.send('focus:session', s), // { date, count }
+  focusPhase: (p) => ipcRenderer.send('focus:phase', p), // { phase: 'break' | 'focus' | 'done', minutes }
   resolveApproval: (id, decision) => ipcRenderer.send('approval:resolve', { id, decision }),
   onSession: (cb) => ipcRenderer.on('session', (_e, snap) => cb(snap)),
 });

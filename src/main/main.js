@@ -36,6 +36,9 @@ app.whenReady().then(() => {
     startup: app.getLoginItemSettings().openAtLogin,
     motion: cfg.motion || theme.motion,
     focusMinutes: cfg.focusMinutes,
+    breakMinutes: cfg.focusBreakMinutes,
+    focusCycle: cfg.focusCycle,
+    focusSessions: cfg.focusSessions,
     monitor: cfg.monitor,
   };
 
@@ -112,7 +115,15 @@ app.whenReady().then(() => {
   music.on('change', (m) => windowMgr.send('music', m));
 
   const pushSettings = () =>
-    windowMgr.send('settings', { motion: settings.motion, sounds: settings.sounds, focusMinutes: settings.focusMinutes, personality: settings.personality });
+    windowMgr.send('settings', {
+      motion: settings.motion,
+      sounds: settings.sounds,
+      focusMinutes: settings.focusMinutes,
+      breakMinutes: settings.breakMinutes,
+      cycle: settings.focusCycle,
+      focusSessions: settings.focusSessions,
+      personality: settings.personality,
+    });
   win.webContents.on('did-finish-load', () => {
     const snap = state.snapshot();
     windowMgr.send('state', snap.state);
@@ -143,16 +154,31 @@ app.whenReady().then(() => {
     if (id === -1) state.preview(null);
     else state.resolve(id, decision);
   });
-  ipcMain.on('focus:minutes', (_e, m) => {
-    const min = Math.round(Number(m));
-    if (!(min >= theme.home.focusMinMinutes && min <= theme.home.focusMaxMinutes)) return;
-    settings.focusMinutes = min;
-    config.update({ focusMinutes: min });
+  // Focus / Pomodoro: the notch window runs the timer; main saves its settings and plays the chimes
+  const H = theme.home;
+  const inRange = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
+  ipcMain.on('focus:config', (_e, c) => {
+    if (!c || typeof c !== 'object') return;
+    const patch = {};
+    if (inRange(c.focusMinutes, H.focusMinMinutes, H.focusMaxMinutes)) patch.focusMinutes = c.focusMinutes;
+    if (inRange(c.breakMinutes, H.breakMinMinutes, H.breakMaxMinutes)) patch.focusBreakMinutes = c.breakMinutes;
+    if (typeof c.cycle === 'boolean') patch.focusCycle = c.cycle;
+    if (!Object.keys(patch).length) return;
+    config.update(patch);
+    if (patch.focusMinutes) settings.focusMinutes = patch.focusMinutes;
+    if (patch.focusBreakMinutes) settings.breakMinutes = patch.focusBreakMinutes;
+    if (typeof patch.focusCycle === 'boolean') settings.focusCycle = patch.focusCycle;
   });
-  ipcMain.on('focus:done', () => {
-    if (quiet()) return;
-    if (settings.sounds) windowMgr.send('chime', 'focus');
-    notify.toast('focus', {});
+  ipcMain.on('focus:session', (_e, s) => {
+    if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s.date) || !inRange(s.count, 0, 999)) return;
+    settings.focusSessions = { date: s.date, count: s.count };
+    config.update({ focusSessions: settings.focusSessions });
+  });
+  const PHASE_CHIME = { break: 'pomoBreak', focus: 'pomoFocus', done: 'focus' };
+  ipcMain.on('focus:phase', (_e, p) => {
+    if (!p || !PHASE_CHIME[p.phase] || quiet()) return; // nothing while paused or a game is in front
+    if (settings.sounds) windowMgr.send('chime', PHASE_CHIME[p.phase]);
+    notify.toast(p.phase === 'done' ? 'focus' : p.phase === 'break' ? 'pomoBreak' : 'pomoFocus', { minutes: p.minutes });
   });
 
   // ---------- tray ----------

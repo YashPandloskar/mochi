@@ -63,7 +63,7 @@ The pill at the bottom of the panel switches the view. Click an icon:
 | Claude | The live work panel (timer, step, diff, progress) or, when idle, your last job and its message |
 | Music | A bigger Apple Music player: art, title, artist, progress with times, previous / play-pause / next. The panel takes the album's colour |
 | Chat | Day-to-day questions to Claude: plan something, explain something, draft a message (see below) |
-| Focus | The countdown with a progress ring (shared with the Focus tile). **− / +** change the length in 5 minute steps (5 to 120, remembered); locked while counting. Default 25: `home.focusMinutes` in `src/theme.js` |
+| Focus | A Pomodoro timer with a progress ring: **25 minutes of focus, then a 5 minute break, then focus again**, until you press Reset. **− / +** change the focus length (5 to 120, steps of 5) and the break length (1 to 30). **Cycle** turns the repeating off for a single timer. Each finished focus period counts as a session; today's count is shown on the tile and the tab and is remembered for the day. A soft chime and a toast mark every switch (a falling tune for "break", a rising one for "back to focus"). The collapsed notch widens with a ring and the time (green during a break). Lengths are locked while counting. Defaults: `home.focusMinutes`, `home.breakMinutes`, `home.cycle` in `src/theme.js` |
 
 The panel opens on Home when idle and on Claude while a job runs or has just finished. Needs-you always
 takes over (it has no nav bar). The nav bar can be taken off the Working and Done panels with

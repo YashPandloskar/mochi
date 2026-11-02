@@ -57,7 +57,7 @@
           <button class="t-round t-playpause" data-r="playpause" type="button" hidden>${Icons.pause(14)}</button>
         </div>
         <button class="tile tile-focus" data-r="focus" type="button">
-          <div class="t-label">Focus</div>
+          <div class="t-label" data-r="focusLabel">Focus</div>
           <span class="t-round t-play" data-r="focusBtn">${Icons.play(14)}</span>
           <div class="t-big" data-r="focusTime">${H.focusMinutes}:00</div>
           <div class="t-sub" data-r="focusSub">Ready to start</div>
@@ -163,9 +163,18 @@
       r.status.textContent = status();
 
       const f = Focus.read();
+      const onBreak = f.running && f.phase === 'break';
+      r.focusLabel.textContent = onBreak ? 'Break' : 'Focus';
+      r.focus.style.setProperty('--to', onBreak ? H.breakTileColor : H.tileColors.focus); // green while on a break
       r.focusBtn.innerHTML = f.running ? Icons.stop(14) : Icons.play(14);
       r.focusTime.textContent = f.running ? clock(f.left) : f.finished ? '0:00' : clock(f.total);
-      r.focusSub.textContent = f.running ? `${Math.ceil(f.left / 60)} min left` : f.finished ? 'Time is up' : 'Ready to start';
+      r.focusSub.textContent = f.running
+        ? `${Math.ceil(f.left / 60)} min left`
+        : f.finished
+        ? 'Time is up'
+        : f.sessions
+        ? `${f.sessions} session${f.sessions === 1 ? '' : 's'} today`
+        : 'Ready to start';
     }
 
     setInterval(tick, 1000);

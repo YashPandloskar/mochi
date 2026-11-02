@@ -96,6 +96,8 @@
     '--chat-code': theme.chat.codeBackground,
     '--chat-input': theme.chat.inputBackground,
     '--chat-accent': theme.chat.accent,
+    '--timer-break-ring': theme.companions.timer.breakRing,
+    '--timer-break-text': theme.companions.timer.breakText,
     '--lean': theme.lively.leanScale,
     '--lean-s': theme.lively.leanSeconds + 's',
     '--dots-s': theme.lively.typingDotsSeconds + 's',
@@ -218,7 +220,9 @@
       notch.style.height = h + 'px';
       notch.style.borderRadius = radius(theme.expanded.radius);
       notch.style.background = 'transparent';
-      gradient.style.background = `linear-gradient(to bottom, ${p.from}, ${to})`;
+      // the Focus tab turns green while on a break
+      const g = key === 'focus' && Focus.read().running && Focus.read().phase === 'break' ? theme.panels.focusBreak : null;
+      gradient.style.background = `linear-gradient(to bottom, ${g ? g.from : p.from}, ${g ? g.to : to})`;
       if (p.fromAlt) gradientAlt.style.background = `linear-gradient(to bottom, ${p.fromAlt}, ${p.toAlt})`;
       notch.classList.toggle('is-done', key === 'done'); // the green crossfade belongs to the Done panel only
       window.mochi.setHitSize({ w: theme.expanded.width, h, collapsed: false });
@@ -284,6 +288,7 @@
       cTime.textContent = mmss(f.left);
       cArc.style.strokeDashoffset = (RING_C * (1 - f.left / f.total)).toFixed(2);
     }
+    notch.classList.toggle('timer-break', f.running && f.phase === 'break'); // green ring during a break
     if (f.running !== timerOn) {
       timerOn = f.running;
       notch.classList.toggle('timer-on', timerOn);
@@ -291,6 +296,9 @@
     }
   }
   Focus.onChange(refreshTimer);
+  Focus.onChange(() => {
+    if (expanded && viewKey() === 'focus') applyGeometry();
+  });
   setInterval(refreshTimer, 500);
 
   function refreshBubble(m) {
@@ -408,7 +416,8 @@
   });
   window.mochi.onSettings((s) => {
     if (s.personality !== undefined) Personality.setEnabled(s.personality);
-    if (s.focusMinutes) Focus.setMinutes(s.focusMinutes, false);
+    Focus.loadConfig({ focusMinutes: s.focusMinutes, breakMinutes: s.breakMinutes, cycle: s.cycle });
+    if (s.focusSessions) Focus.loadSessions(s.focusSessions);
     if (s.motion && s.motion !== motion) {
       motion = s.motion;
       document.documentElement.dataset.motion = motion;

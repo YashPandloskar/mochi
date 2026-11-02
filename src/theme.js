@@ -26,7 +26,7 @@ const theme = {
 
   // Small extras that sit with the collapsed notch while something is going on.
   companions: {
-    timer: { ring: '#b56cf0', text: '#c9a7ff', ringSize: 15, ringStroke: 2.2, fontSize: 11 },
+    timer: { ring: '#b56cf0', text: '#c9a7ff', breakRing: '#6fe3a8', breakText: '#a9f5cd', ringSize: 15, ringStroke: 2.2, fontSize: 11 },
     // round album-art bubble beside the notch while Apple Music is playing or paused
     music: { width: 34, height: 30, radius: [0, 0, 15, 15], gap: 6, art: 22, background: '#0b0b0b', pausedOpacity: 0.5 },
   },
@@ -56,7 +56,8 @@ const theme = {
     working: { height: 200, heightWithNav: 240, from: '#0b0604', to: '#4a2410' },
     claudeIdle: { height: 200, heightWithNav: 240, from: '#0b0604', to: '#4a2410' },
     music: { height: 232, from: '#040404', to: '#4a1824' }, // `to` is replaced by the album colour when there is art
-    focus: { height: 222, from: '#07040f', to: '#3b1d6e' },
+    focus: { height: 250, from: '#07040f', to: '#3b1d6e' },
+    focusBreak: { from: '#04100a', to: '#14573a' }, // the Focus tab while on a break (same height as focus)
     chat: { height: 340, from: '#060606', to: '#1d1309' },
     needs: { height: 176, from: '#0b0803', to: '#4a3309' },
     break: { height: 184, from: '#04100d', to: '#14503f' },
@@ -104,6 +105,13 @@ const theme = {
     playBreatheSeconds: 2,
     equaliserSeconds: [0.9, 1.1, 0.7],
     focusMinutes: 25, // default; change it in the Focus tab (remembered) or here
+    // Pomodoro: focus, then a break, then focus again, until you reset (switch off with "Cycle" for a single timer)
+    breakMinutes: 5,
+    breakStepMinutes: 1,
+    breakMinMinutes: 1,
+    breakMaxMinutes: 30,
+    cycle: true,
+    breakTileColor: '#2fa36b', // the Focus tile turns green during a break
     focusStepMinutes: 5, // the Focus tab's - and + buttons
     focusMinMinutes: 5,
     focusMaxMinutes: 120,
@@ -170,6 +178,9 @@ const theme = {
       done: [{ f: 659.25, at: 0, len: 0.55 }, { f: 987.77, at: 0.14, len: 0.8 }],
       needs: [{ f: 783.99, at: 0, len: 0.4 }, { f: 783.99, at: 0.22, len: 0.55 }],
       break: [{ f: 659.25, at: 0, len: 0.5 }, { f: 523.25, at: 0.2, len: 0.9 }],
+      // Pomodoro: a falling phrase when a break starts, a rising one when it is time to focus again
+      pomoBreak: [{ f: 783.99, at: 0, len: 0.5 }, { f: 587.33, at: 0.18, len: 0.5 }, { f: 440, at: 0.36, len: 0.9 }],
+      pomoFocus: [{ f: 440, at: 0, len: 0.5 }, { f: 587.33, at: 0.18, len: 0.5 }, { f: 783.99, at: 0.36, len: 0.9 }],
       focus: [{ f: 523.25, at: 0, len: 0.5 }, { f: 659.25, at: 0.15, len: 0.5 }, { f: 783.99, at: 0.3, len: 0.5 }, { f: 1046.5, at: 0.45, len: 0.9 }],
     },
   },

@@ -246,3 +246,6 @@ html, body {
   0%, 100% { transform: translateX(calc(var(--dance-sway) * -1)) rotate(calc(var(--dance-tilt) * -1)); }
   50% { transform: translateX(var(--dance-sway)) rotate(var(--dance-tilt)); }
 }
+
+/* collapsed notch during a Pomodoro break: green ring and time */
+#notch.timer-break { --timer-ring: var(--timer-break-ring); --timer-text: var(--timer-break-text); }
