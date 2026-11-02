@@ -1,4 +1,4 @@
-# mochi
+﻿# mochi
 
 A small notch fused to the top-centre edge of your primary display (Windows 10/11). It shows what
 Claude Code is doing, lets you allow or deny actions, and houses a mascot called Mochi.
@@ -28,7 +28,7 @@ If `npm start` later says the Electron binary is missing, run `node node_modules
 ### Connect Claude Code (hooks)
 
 mochi gets its events from hooks in `~/.claude/settings.json`. The installer **merges** (it never
-overwrites), writes a backup to `%APPDATA%\mochi\backups\`, shows you the diff and asks `y/N`:
+overwrites), writes a backup to `%USERPROFILE%\.mochi\backups\`, shows you the diff and asks `y/N`:
 
 ```powershell
 npm run hooks:install -- --dry-run   # just show the diff
@@ -77,7 +77,7 @@ The **Notes** tab (checklist icon) has a to-do list on the left and a quick note
 - **Tasks:** type in "Add a task…" and press Enter. Click the box to tick a task, double-click its text to rename it (an emptied task is deleted), use the ✕ to delete, and **Clear done** removes the ticked ones.
 - **Nothing typed is lost:** a task you typed but did not confirm with Enter is added as soon as you click away, switch tab or the notch closes. **Esc** cancels instead. Every change is written to the file immediately; if Windows refuses a write, mochi retries and shows a red warning in the Notes tab until it succeeds.
 - **Quick note:** just type; it is saved a moment after you stop.
-- **It is a plain file:** `%APPDATA%\mochi\notes.md`. **Open file** opens it in your editor, and changes made there appear in the notch within a second. The format is simple:
+- **It is a plain file:** `%USERPROFILE%\.mochi\notes.md`. **Open file** opens it in your editor, and changes made there appear in the notch within a second. The format is simple:
 
   ```
   # mochi notes
@@ -90,7 +90,7 @@ The **Notes** tab (checklist icon) has a to-do list on the left and a quick note
   anything you like
   ```
 
-  Other bullet styles (`- task`, `* [x] task`, `[ ] task`) and headings called Tasks / Notes also work. Anything you write under `## Note` is kept as the note. Change the file's location with `notesFile` in `%APPDATA%\mochi\config.json`.
+  Other bullet styles (`- task`, `* [x] task`, `[ ] task`) and headings called Tasks / Notes also work. Anything you write under `## Note` is kept as the note. Change the file's location with `notesFile` in `%USERPROFILE%\.mochi\config.json`.
 - **Keyboard focus:** like Chat, the notch takes keyboard focus only while you click into a text box, gives it back on **Esc**, and stays open while you type. Nothing leaves your computer.
 - Limits: 200 tasks, 500 characters per task, 50,000 characters of note.
 
@@ -166,7 +166,7 @@ npm test
 ## Troubleshooting
 
 - **Nothing reacts to Claude:** restart mochi, then start a *new* Claude Code session. Check the server:
-  `Get-Content $env:APPDATA\mochi\config.json` has a `port`; `hooks:install` must have been applied.
+  `Get-Content $env:USERPROFILE\.mochi\config.json` has a `port`; `hooks:install` must have been applied.
 - **The notch shows the wrong state:** restart mochi. For tests only, `npm start -- --preview-state=needs`.
 - **No usage bars:** run `claude` in a normal terminal and send two messages; see "Usage bars" above.
 - **Second `npm start`:** a second copy exits immediately; use the tray's Quit first if you want a clean restart.
@@ -181,20 +181,20 @@ npm test
    It shows the diff and asks `y/N`. **By hand instead:** open `%USERPROFILE%\.claude\settings.json`, delete every
    hook entry whose command contains `send-event.ps1` (under `PreToolUse`, `PostToolUse`, `Notification`,
    `Stop` and `PermissionRequest`, and any now-empty event), and replace the `statusLine` pointing at
-   `hooks\statusline.js` with your old one (it is saved as `statusLineOriginal` in `%APPDATA%\mochi\config.json`).
-   Backups of every change are in `%APPDATA%\mochi\backups\`.
+   `hooks\statusline.js` with your old one (it is saved as `statusLineOriginal` in `%USERPROFILE%\.mochi\config.json`).
+   Backups of every change are in `%USERPROFILE%\.mochi\backups\`.
 2. **Quit mochi** from the tray icon.
 3. **Startup entry:** untick *Launch on startup* in the tray menu before quitting.
 4. **Delete the data and the app:**
    ```powershell
-   Remove-Item -Recurse -Force $env:APPDATA\mochi
+   Remove-Item -Recurse -Force $env:USERPROFILE\.mochi
    Remove-Item -Recurse -Force C:\Users\Lenovo\mochi
    ```
 
 ## Security notes
 
 - The server listens on `127.0.0.1` only (never the network) and every request needs the random token
-  stored in `%APPDATA%\mochi\config.json`. Requests from a browser (with an `Origin`) are refused.
+  stored in `%USERPROFILE%\.mochi\config.json`. Requests from a browser (with an `Origin`) are refused.
 - The hook script, the status line script and the helpers only read what is listed above. Window
   titles and content are never read; game detection only reads the active program's name.
 

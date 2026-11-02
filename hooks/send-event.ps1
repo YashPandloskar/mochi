@@ -9,7 +9,7 @@ try {
     $json = $reader.ReadToEnd()
     if ([string]::IsNullOrWhiteSpace($json)) { exit 0 }
 
-    $cfgPath = Join-Path $env:APPDATA 'mochi\config.json'
+    $cfgPath = Join-Path $env:USERPROFILE '.mochi\config.json'
     if (-not (Test-Path $cfgPath)) { exit 0 }
     $cfg = Get-Content $cfgPath -Raw | ConvertFrom-Json
     if (-not $cfg.token -or -not $cfg.port) { exit 0 }

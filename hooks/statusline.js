@@ -1,13 +1,13 @@
 // mochi statusLine command.
 // 1. Reads Claude Code's status JSON from stdin.
-// 2. Writes rate_limits (five_hour / seven_day) atomically to %APPDATA%\mochi\usage.json.
+// 2. Writes rate_limits (five_hour / seven_day) atomically to ~\.mochi\usage.json.
 // 3. Runs the user's original statusLine command (saved by the installer) with the same stdin
 //    and prints its output, so the existing status line keeps working.
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
-const dir = path.join(process.env.APPDATA || '', 'mochi');
+const dir = path.join(require('os').homedir(), '.mochi');
 
 function readStdin() {
   try {

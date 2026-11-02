@@ -1,11 +1,11 @@
 # Opens (or brings forward) the Apple Music app so you can pick songs yourself.
 # If it already has a window it is restored and raised; otherwise it is launched.
 # (Windows ignores a plain launch request for an app that is already running behind other windows.)
-# Failures are written to %APPDATA%\mochi\open-music.log.
+# Failures are written to ~\.mochi\open-music.log.
 param([string]$AppId = 'AppleInc.AppleMusicWin_nzyj5cx40ttqa!App')
 
 function Log($msg) {
-    try { Add-Content -Path (Join-Path $env:APPDATA 'mochi\open-music.log') -Value ("{0} {1}" -f (Get-Date -Format s), $msg) } catch { }
+    try { Add-Content -Path (Join-Path $env:USERPROFILE '.mochi\open-music.log') -Value ("{0} {1}" -f (Get-Date -Format s), $msg) } catch { }
 }
 
 try {

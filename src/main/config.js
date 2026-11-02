@@ -1,6 +1,6 @@
-const { app } = require('electron');
 const crypto = require('crypto');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 
 const defaults = {
@@ -17,14 +17,16 @@ const defaults = {
   focusCycle: null, // Pomodoro cycles on/off; null means the theme default
   focusSessions: { date: '', count: 0 }, // completed focus periods today
   motion: null, // "subtle" or "lively"; null means the theme default
-  notesFile: null, // path of the notes Markdown file; null means %APPDATA%\mochi\notes.md
+  notesFile: null, // path of the notes Markdown file; null means ~\.mochi\notes.md
   // the user's own statusLine, saved by the hook installer so it can be chained and restored
   statusLineOriginal: null,
   jobs: { date: '', count: 0 },
 };
 
 function configDir() {
-  return path.join(app.getPath('appData'), 'mochi');
+  // Not %APPDATA%: Windows gives programs started from some apps (the Claude desktop app's terminal) a private
+  // copy of AppData, so a mochi launched there would see different settings and notes than the hooks do.
+  return path.join(os.homedir(), '.mochi');
 }
 
 function configPath() {

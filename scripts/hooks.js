@@ -16,7 +16,7 @@ const opt = (n) => (args.includes(n) ? args[args.indexOf(n) + 1] : null);
 
 const root = path.resolve(__dirname, '..');
 const settingsPath = opt('--settings') || path.join(os.homedir(), '.claude', 'settings.json');
-const mochiDir = path.join(process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'), 'mochi');
+const mochiDir = path.join(os.homedir(), '.mochi');
 const configPath = opt('--config') || path.join(mochiDir, 'config.json');
 const sendEvent = path.join(root, 'hooks', 'send-event.ps1');
 const statusScript = path.join(root, 'hooks', 'statusline.js');
