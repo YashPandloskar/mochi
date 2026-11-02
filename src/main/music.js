@@ -105,10 +105,15 @@ class Music extends EventEmitter {
     } catch {}
   }
 
-  // Opens the Apple Music app so you can pick songs yourself.
+  // Opens Apple Music (or raises it if it is already running) so you can pick songs yourself.
   open() {
     try {
-      spawn('explorer.exe', [`shell:AppsFolder\\${theme.music.appId}`], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
+      const script = path.join(__dirname, '..', '..', 'helpers', 'open-music.ps1');
+      // Not detached: a console program started without a console exits at once and never runs the script.
+      spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', script, '-AppId', theme.music.appId], {
+        stdio: 'ignore',
+        windowsHide: true,
+      }).unref();
     } catch {}
   }
 }
