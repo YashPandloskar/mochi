@@ -12,6 +12,8 @@ try {
     $cfg = Get-Content $cfgPath -Raw | ConvertFrom-Json
     if (-not $cfg.token -or -not $cfg.port) { exit 0 }
 
+    # MOCHI_PORT lets a test copy of mochi receive events instead of the real one
+    $port = if ($env:MOCHI_PORT) { $env:MOCHI_PORT } else { $cfg.port }
     $eventName = ($json | ConvertFrom-Json).hook_event_name
     $isApproval = $eventName -eq 'PermissionRequest'
     $route = if ($isApproval) { 'approval' } else { 'event' }
@@ -19,7 +21,7 @@ try {
     $timeout = if ($isApproval) { 110 } else { 3 }
 
     $resp = Invoke-WebRequest -UseBasicParsing -Method Post `
-        -Uri ("http://127.0.0.1:{0}/{1}" -f $cfg.port, $route) `
+        -Uri ("http://127.0.0.1:{0}/{1}" -f $port, $route) `
         -Headers @{ 'X-Mochi-Token' = $cfg.token } `
         -ContentType 'application/json; charset=utf-8' `
         -Body ([System.Text.Encoding]::UTF8.GetBytes($json)) `

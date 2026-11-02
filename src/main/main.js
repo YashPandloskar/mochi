@@ -30,6 +30,13 @@ app.whenReady().then(() => {
   usage.start();
 
   const win = windowMgr.create(cfg);
+  // Allow / Deny buttons in the notch. id -1 is the tray "Preview state" sample: just close it.
+  ipcMain.on('approval:resolve', (_e, { id, decision }) => {
+    if (decision !== 'allow' && decision !== 'deny') return;
+    if (id === -1) state.preview(null);
+    else state.resolve(id, decision);
+  });
+
   const trayIcon = tray.create({
     showUsage: cfg.showUsage,
     onToggleUsage: (on) => {
@@ -37,8 +44,6 @@ app.whenReady().then(() => {
       usage.setEnabled(on);
     },
     onPreview: (s) => state.preview(s),
-    onResolve: (id, decision) => state.resolve(id, decision),
-    onMood: (m) => windowMgr.send('mood', m),
   });
 
   state.on('change', (snap) => {

@@ -56,6 +56,18 @@
     '--bar-track2': W.barTrack,
     '--bar-fill': W.barFill,
     '--bar-s': W.barSeconds + 's',
+    '--needs-fg': theme.needs.chipColor,
+    '--needs-chip-bg': theme.needs.chipBackground,
+    '--chip-s': theme.needs.chipPulseSeconds + 's',
+    '--box-bg': theme.needs.boxBackground,
+    '--box-border': theme.needs.boxBorder,
+    '--allow-bg': theme.needs.allowBackground,
+    '--allow-fg': theme.needs.allowColor,
+    '--allow-s': theme.needs.allowBreatheSeconds + 's',
+    '--deny-bg': theme.needs.denyBackground,
+    '--wobble-deg': theme.needs.wobbleDeg + 'deg',
+    '--wobble-s': theme.needs.wobbleSeconds + 's',
+    '--q-s': theme.needs.questionSeconds + 's',
   };
   for (const [k, v] of Object.entries(vars)) root.setProperty(k, v);
   notch.classList.toggle('glow', theme.notchGlow);
@@ -66,7 +78,6 @@
   let collapseTimer = null;
   let contentTimer = null;
   let greenTimer = null;
-  let moodOverride = null;
   let lastSession = null;
 
   // Needs-you and Done open by themselves; Working stays as eyes until you hover.
@@ -76,25 +87,17 @@
   const home = window.HomeView.create();
   const working = window.WorkingView.create();
   const done = window.DoneView.create();
+  const needs = window.NeedsView.create();
 
-  // Stand-in for the Needs-you panel (next stage): one Mochi, mood follows the state.
-  const mochi = window.Mochi.create({ mood: theme.mochi.moodByState.idle, size: 72 });
-  const caption = document.createElement('div');
-  const placeholder = document.createElement('div');
-  placeholder.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--muted);font-size:13px';
-  placeholder.append(mochi.el, caption);
-
-  content.append(home.el, working.el, done.el, placeholder);
+  content.append(home.el, working.el, done.el, needs.el);
 
   function showView() {
-    const views = { idle: home.el, working: working.el, done: done.el };
-    const active = views[state] || placeholder;
-    for (const v of [home.el, working.el, done.el, placeholder]) v.style.display = v === active ? (v === placeholder ? 'flex' : '') : 'none';
-    caption.textContent = `${state}  (panel arrives in a later stage)`;
-    mochi.setMood(moodOverride || theme.mochi.moodByState[state]);
+    const views = { idle: home.el, working: working.el, done: done.el, needs: needs.el };
+    for (const v of Object.values(views)) v.style.display = v === views[state] ? '' : 'none';
     if (lastSession) {
       working.update(lastSession);
       done.update(lastSession);
+      needs.update(lastSession);
     }
   }
 
@@ -214,7 +217,6 @@
     if (!theme.panelForState[next]) return;
     const changed = next !== state;
     state = next;
-    moodOverride = null;
     buildEyes();
 
     if (changed) {
@@ -248,12 +250,9 @@
     home.update({ session });
     working.update(session);
     done.update(session);
+    needs.update(session);
   });
   window.mochi.onUsage((usage) => home.update({ usage }));
-  window.mochi.onMood((m) => {
-    moodOverride = m;
-    mochi.setMood(m);
-  });
 
   content.style.visibility = 'hidden';
   applyGeometry();

@@ -111,6 +111,23 @@ const theme = {
     turnGreenAfterSeconds: 4.5,
   },
 
+  // Needs-approval panel.
+  needs: {
+    chipBackground: 'rgba(255, 208, 122, 0.16)',
+    chipColor: '#ffd07a',
+    chipPulseSeconds: 1.2,
+    boxBackground: 'rgba(0, 0, 0, 0.38)',
+    boxBorder: 'rgba(255, 208, 122, 0.18)',
+    allowBackground: '#ffd07a',
+    allowColor: '#2a1d05',
+    allowBreatheSeconds: 2.4, // gentle
+    denyBackground: 'rgba(255, 255, 255, 0.1)',
+    wobbleDeg: 7,
+    wobbleSeconds: 1.6,
+    questionSeconds: 2.2,
+    commandChars: 400,
+  },
+
   // Mochi at a laptop (viewBox 96x88). Mochi himself is the unchanged component; this only places and tints him.
   laptop: {
     mochiTransform: 'translate(13.2 2) scale(1.45)',

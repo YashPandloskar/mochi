@@ -164,6 +164,7 @@ class SessionState extends EventEmitter {
     this.override = null;
     const approval = {
       id: this.nextApprovalId++,
+      requestedAt: Date.now(),
       sessionId: s.id,
       toolName: ev.tool_name || '',
       command: toolSummary(ev.tool_name, ev.tool_input),
@@ -218,7 +219,10 @@ class SessionState extends EventEmitter {
 
   snapshot() {
     const s = this.sessions.get(this.currentId);
-    const approval = this.pending[0] || null;
+    let approval = this.pending[0] || null;
+    if (this.override === 'needs') {
+      approval = { id: -1, requestedAt: Date.now(), toolName: 'Bash', command: 'rm -rf build && npm run build', diff: null }; // tray preview sample
+    }
     let state = s ? s.state : 'idle';
     if (approval || (s && s.needsHint)) state = 'needs';
     if (this.override) state = this.override;
@@ -236,7 +240,7 @@ class SessionState extends EventEmitter {
         lastMessage: s ? s.lastMessage : '',
       }),
       needsText: approval ? approval.command : s ? s.needsHint : '',
-      approval: approval && { id: approval.id, toolName: approval.toolName, command: approval.command, diff: approval.diff },
+      approval: approval && { id: approval.id, requestedAt: approval.requestedAt, toolName: approval.toolName, command: approval.command, diff: approval.diff },
       pendingCount: this.pending.length,
       jobsToday: this.jobs.date === new Date().toLocaleDateString('sv') ? this.jobs.count : 0,
     };
