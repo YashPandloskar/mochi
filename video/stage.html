@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mochi launch trailer</title>
+<link rel="stylesheet" href="../src/renderer/styles.css">
+<link rel="stylesheet" href="../src/renderer/views/home.css">
+<link rel="stylesheet" href="../src/renderer/views/panels.css">
+<style>
+  :root { --ease-out: cubic-bezier(.16, 1, .3, 1); }
+  html, body { background: #000; font-family: 'Segoe UI Variable Display', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif; }
+  html, body, * { cursor: none !important; } /* the real pointer must not appear in the recording; the film draws its own */
+  #screen { position: absolute; inset: 0; overflow: hidden; background: #000; }
+
+  /* ---------- the world: a fake desktop the camera moves over ---------- */
+  #world { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; will-change: transform; }
+  #bezel { position: absolute; left: -3000px; top: -3000px; width: 8000px; height: 3000px; background: #040405; }
+  #bezel::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: linear-gradient(90deg, transparent, rgba(255,255,255,.14) 30%, rgba(255,255,255,.14) 70%, transparent); }
+  #wall { position: absolute; left: -3000px; top: 0; width: 8000px; height: 4000px; overflow: hidden;
+    background: linear-gradient(160deg, #0a0b18 0%, #130c24 55%, #0b0814 100%); }
+  .orb { position: absolute; border-radius: 50%; filter: blur(90px); opacity: .55; }
+  .orb.a { left: 2700px; top: 120px; width: 1100px; height: 900px; background: #4b3dff; animation: drift1 22s ease-in-out infinite alternate; }
+  .orb.b { left: 3900px; top: 520px; width: 1000px; height: 800px; background: #ff4f9a; opacity: .38; animation: drift2 26s ease-in-out infinite alternate; }
+  .orb.c { left: 3300px; top: -120px; width: 800px; height: 600px; background: #12c2ff; opacity: .26; animation: drift1 30s ease-in-out infinite alternate-reverse; }
+  @keyframes drift1 { to { transform: translate(120px, 80px) scale(1.12); } }
+  @keyframes drift2 { to { transform: translate(-140px, -60px) scale(1.08); } }
+
+  /* a code editor with a terminal, dimmed so the notch is the hero */
+  #ide { position: absolute; left: 250px; top: 130px; width: 1420px; height: 800px; border-radius: 16px; overflow: hidden;
+    background: rgba(17, 18, 28, .86); box-shadow: 0 40px 120px rgba(0,0,0,.6), inset 0 0 0 1px rgba(255,255,255,.07); transition: opacity .8s, filter .8s; opacity: .7; }
+  #ide.dim { opacity: .38; filter: blur(2px); }
+  .ide-bar { height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 16px; background: rgba(255,255,255,.035); font-size: 13px; color: #8a8fa6; }
+  .ide-bar i { width: 11px; height: 11px; border-radius: 50%; background: #ff5f57; } .ide-bar i:nth-child(2) { background: #febc2e; } .ide-bar i:nth-child(3) { background: #28c840; }
+  .ide-bar span { margin-left: 14px; }
+  .ide-side { position: absolute; left: 0; top: 40px; bottom: 0; width: 230px; border-right: 1px solid rgba(255,255,255,.06); padding: 18px 16px; font: 13px/26px 'Cascadia Code', Consolas, monospace; color: #7e84a0; }
+  .ide-side b { color: #c8cbe0; font-weight: 600; } .ide-side .on { color: #fff; background: rgba(120,110,255,.18); margin: 0 -16px; padding: 0 16px; }
+  .ide-code { position: absolute; left: 250px; top: 54px; right: 20px; height: 440px; font: 15px/27px 'Cascadia Code', Consolas, monospace; color: #b7bbd3; white-space: pre; overflow: hidden; }
+  .ide-code .n { color: #4b5068; display: inline-block; width: 38px; }
+  .k { color: #c792ea; } .s { color: #c3e88d; } .f { color: #82aaff; } .c { color: #5c637f; } .v { color: #f78c6c; }
+  .ide-term { position: absolute; left: 230px; right: 0; bottom: 0; height: 250px; background: rgba(6, 7, 12, .8); border-top: 1px solid rgba(255,255,255,.07); padding: 18px 26px; font: 15px/26px 'Cascadia Code', Consolas, monospace; color: #9aa0bd; white-space: pre; }
+  .ide-term .p { color: #6fe3a8; } .ide-term .caret { display: inline-block; width: 9px; height: 18px; background: #c9ccdf; vertical-align: -3px; animation: caret-blink 1s steps(1) infinite; }
+
+  /* mochi itself: the real interface, positioned like the real window (600 wide, centred on the screen) */
+  #frame { position: absolute; left: 660px; top: 0; width: 600px; height: 400px; }
+  #frame #notch, #frame #bubble { z-index: 5; }
+  #hl { position: absolute; z-index: 20; border: 2px solid rgba(255,255,255,.95); border-radius: 18px; box-shadow: 0 0 0 4px rgba(255,255,255,.12), 0 0 34px rgba(255,255,255,.35); opacity: 0; pointer-events: none; transition: opacity .35s, left .5s var(--ease-out), top .5s var(--ease-out), width .5s var(--ease-out), height .5s var(--ease-out); }
+  #cursor { position: absolute; left: 0; top: 0; z-index: 30; width: 26px; height: 32px; margin: -2px 0 0 -3px; opacity: 0; filter: drop-shadow(0 3px 5px rgba(0,0,0,.55)); will-change: transform; }
+  #ripple { position: absolute; z-index: 29; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; border: 2px solid rgba(255,255,255,.9); opacity: 0; pointer-events: none; }
+
+  /* ---------- screen-space layers ---------- */
+  #vig { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 42%, transparent 52%, rgba(0,0,0,.58) 100%); }
+  #grain { position: absolute; inset: -60px; pointer-events: none; opacity: .07; mix-blend-mode: overlay; animation: grain .5s steps(5) infinite;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
+  @keyframes grain { 0% { transform: translate(0,0); } 20% { transform: translate(-30px, 18px); } 40% { transform: translate(22px, -26px); } 60% { transform: translate(-14px, -34px); } 80% { transform: translate(34px, 26px); } 100% { transform: translate(0,0); } }
+  #scrim { position: absolute; left: 0; right: 0; bottom: 0; height: 360px; pointer-events: none; background: linear-gradient(to top, rgba(0,0,0,.62), rgba(0,0,0,0)); }
+  #flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; mix-blend-mode: screen; }
+  #fade { position: absolute; inset: 0; background: #000; opacity: 1; pointer-events: none; }
+
+  /* ---------- typography ---------- */
+  #titles { position: absolute; inset: 0; pointer-events: none; color: #f6f3ee; }
+  .cap { position: absolute; left: 0; right: 0; text-align: center; }
+  .cap .l1 { font-size: 70px; font-weight: 650; letter-spacing: -0.035em; line-height: 1.05; }
+  .cap .l2 { margin-top: 14px; font-size: 27px; font-weight: 400; letter-spacing: -0.005em; color: #a8a29a; }
+  .w { display: inline-block; opacity: 0; transform: translateY(34px); filter: blur(14px); }
+  .eyebrow { position: absolute; left: 0; right: 0; text-align: center; font-size: 20px; font-weight: 600; letter-spacing: .5em; text-transform: uppercase; color: #bdb6ab; opacity: 0; }
+  .logo { position: absolute; left: 0; right: 0; display: flex; align-items: center; justify-content: center; gap: 36px; opacity: 0; }
+  .logo .word { font-size: 230px; font-weight: 700; letter-spacing: -0.06em; line-height: 1; background: linear-gradient(180deg, #fff 20%, #cfc6b8 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .tag { position: absolute; left: 0; right: 0; text-align: center; font-size: 36px; font-weight: 400; color: #bdb6ab; letter-spacing: -0.01em; opacity: 0; }
+  .fine { position: absolute; left: 0; right: 0; text-align: center; font-size: 21px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: #7d776d; opacity: 0; }
+</style>
+</head>
+<body>
+<div id="screen">
+  <div id="world">
+    <div id="bezel"></div>
+    <div id="wall"><div class="orb a"></div><div class="orb b"></div><div class="orb c"></div></div>
+    <div id="ide">
+      <div class="ide-bar"><i></i><i></i><i></i><span>webshop — checkout.ts</span></div>
+      <div class="ide-side"><b>WEBSHOP</b><br>▾ src<br>&nbsp;&nbsp;cart.ts<br><span class="on">&nbsp;&nbsp;checkout.ts</span><br>&nbsp;&nbsp;prices.ts<br>&nbsp;&nbsp;vat.ts<br>▾ tests<br>&nbsp;&nbsp;checkout.test.ts</div>
+      <div class="ide-code" id="code"></div>
+      <div class="ide-term" id="term"></div>
+    </div>
+    <div id="frame">
+      <div id="bubble"><div class="bart" id="bart"></div></div>
+      <div id="notch">
+        <div class="gradient"></div>
+        <div class="gradient gradient-alt"></div>
+        <div class="eyes" id="eyes"></div>
+        <svg id="cring" viewBox="0 0 20 20"><circle class="cr-track" cx="10" cy="10" r="7"/><circle class="cr-arc" id="cr-arc" cx="10" cy="10" r="7" transform="rotate(-90 10 10)"/></svg>
+        <span id="ctime"></span>
+        <div class="content" id="content"></div>
+      </div>
+      <div id="hl"></div>
+    </div>
+    <svg id="cursor" viewBox="0 0 26 32"><path d="M3 2 L3 25 L9 19.5 L13.2 29.5 L17.2 27.8 L13 18 L21 18 Z" fill="#fff" stroke="#111" stroke-width="2" stroke-linejoin="round"/></svg>
+    <div id="ripple"></div>
+  </div>
+  <div id="vig"></div>
+  <div id="grain"></div>
+  <div id="scrim"></div>
+  <div id="titles"></div>
+  <div id="flash"></div>
+  <div id="fade"></div>
+</div>
+
+<!-- the virtual clock and sound go first: the real chime.js picks up the shared audio context -->
+<script src="vtime.js"></script>
+<script src="audio.js"></script>
+<script src="../src/renderer/components/icons.js"></script>
+<script src="../src/renderer/components/chime.js"></script>
+<script src="../src/renderer/components/focus.js"></script>
+<script src="../src/renderer/components/mochi.js"></script>
+<script src="../src/renderer/components/laptop-scene.js"></script>
+<script src="../src/renderer/components/progress.js"></script>
+<script src="../src/renderer/components/nav.js"></script>
+<script src="../src/renderer/components/md.js"></script>
+<script src="../src/renderer/components/typing.js"></script>
+<script src="../src/renderer/components/personality.js"></script>
+<script src="../src/renderer/views/home.js"></script>
+<script src="../src/renderer/views/working.js"></script>
+<script src="../src/renderer/views/done.js"></script>
+<script src="../src/renderer/views/needs.js"></script>
+<script src="../src/renderer/views/claude-idle.js"></script>
+<script src="../src/renderer/views/music.js"></script>
+<script src="../src/renderer/views/focus.js"></script>
+<script src="../src/renderer/views/break.js"></script>
+<script src="../src/renderer/views/chat.js"></script>
+<script src="../src/renderer/views/notes.js"></script>
+<script src="../src/renderer/app.js"></script>
+<script src="director.js"></script>
+<script src="render.js"></script>
+</body>
+</html>
