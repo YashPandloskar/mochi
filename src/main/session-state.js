@@ -93,7 +93,7 @@ class SessionState extends EventEmitter {
   begin(s, now) {
     if (s.state === 'done' || s.state === 'idle') {
       clearTimeout(s.doneTimer);
-      Object.assign(s, { state: 'working', startedAt: now, step: 0, diff: null, testCommand: '', testResult: '', lastMessage: '', needsHint: '' });
+      Object.assign(s, { state: 'working', startedAt: now, finishedAt: null, step: 0, diff: null, testCommand: '', testResult: '', lastMessage: '', needsHint: '' });
     }
   }
 
@@ -124,6 +124,7 @@ class SessionState extends EventEmitter {
     s.needsHint = '';
     s.lastMessage = ev.last_assistant_message || '';
     if (!s.startedAt) s.startedAt = Date.now();
+    s.finishedAt = Date.now();
     if (!ev.stop_hook_active) this.countJob();
     clearTimeout(s.doneTimer);
     s.doneTimer = setTimeout(() => {
@@ -193,6 +194,24 @@ class SessionState extends EventEmitter {
     this.emit('change', this.snapshot());
   }
 
+  demo(state) {
+    const now = Date.now();
+    const base = {
+      project: 'webshop',
+      startedAt: now - 125000,
+      finishedAt: null,
+      step: 2,
+      diff: { file: 'checkout.ts', removed: ['const total = 0'], added: ['const total = sum(items)'] },
+      testCommand: 'npm test',
+      testResult: '',
+      lastMessage: '',
+    };
+    if (state === 'done') {
+      return { ...base, step: 4, startedAt: now - 7000, finishedAt: now, testResult: '48 passed', lastMessage: 'Done! The total now adds VAT the right way. All 48 tests pass.' };
+    }
+    return base;
+  }
+
   emitChange() {
     this.emit('change', this.snapshot());
   }
@@ -203,15 +222,19 @@ class SessionState extends EventEmitter {
     let state = s ? s.state : 'idle';
     if (approval || (s && s.needsHint)) state = 'needs';
     if (this.override) state = this.override;
+    const demo = this.override ? this.demo(this.override) : null; // tray "Preview state" shows sample content
     return {
       state,
-      project: s ? s.project : '',
-      startedAt: s ? s.startedAt : null,
-      step: s ? s.step : 0,
-      diff: s ? s.diff : null,
-      testCommand: s ? s.testCommand : '',
-      testResult: s ? s.testResult : '',
-      lastMessage: s ? s.lastMessage : '',
+      ...(demo || {
+        project: s ? s.project : '',
+        startedAt: s ? s.startedAt : null,
+        finishedAt: s ? s.finishedAt || null : null,
+        step: s ? s.step : 0,
+        diff: s ? s.diff : null,
+        testCommand: s ? s.testCommand : '',
+        testResult: s ? s.testResult : '',
+        lastMessage: s ? s.lastMessage : '',
+      }),
       needsText: approval ? approval.command : s ? s.needsHint : '',
       approval: approval && { id: approval.id, toolName: approval.toolName, command: approval.command, diff: approval.diff },
       pendingCount: this.pending.length,

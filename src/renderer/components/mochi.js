@@ -66,10 +66,11 @@
     return '';
   }
 
-  function markup(mood, t) {
-    const cheeks =
-      `<circle cx="13" cy="31" r="3" fill="${t.cheek}" opacity="${t.cheekOpacity}"/>` +
-      `<circle cx="35" cy="31" r="3" fill="${t.cheek}" opacity="${t.cheekOpacity}"/>`;
+  function markup(mood, t, showCheeks = true) {
+    const cheeks = showCheeks
+      ? `<circle cx="13" cy="31" r="3" fill="${t.cheek}" opacity="${t.cheekOpacity}"/>` +
+        `<circle cx="35" cy="31" r="3" fill="${t.cheek}" opacity="${t.cheekOpacity}"/>`
+      : '';
     const tilt = mood === 'curious' ? ' transform="rotate(-6 24 26)"' : '';
     const sparkle =
       mood === 'happy'
@@ -82,7 +83,10 @@
   }
 
   // A <g> holding the whole character. Mochi.create wraps it in an <svg>.
-  function group({ mood = 'wink', clickable = false } = {}) {
+  // Options for scenes (they never redraw him):
+  //   cheeks:   false hides the cheeks (a scene that covers his lower face)
+  //   decorate: (rootGroup, mood) called after every render, to add tints or reflections
+  function group({ mood = 'wink', clickable = false, cheeks = true, decorate = null } = {}) {
     ensureStyle();
     const t = theme();
     const shake = document.createElementNS(NS, 'g'); // dizzy head shake
@@ -103,8 +107,9 @@
 
     function render(next) {
       current = next;
-      root.innerHTML = markup(next, t);
+      root.innerHTML = markup(next, t, cheeks);
       shake.dataset.mood = next;
+      if (decorate) decorate(root, next);
     }
 
     function squish() {
@@ -155,14 +160,14 @@
     return { el: shake, setMood, get mood() { return current; }, destroy: () => clearTimeout(dizzyTimer) };
   }
 
-  function create({ mood = 'wink', size = 48, clickable = true } = {}) {
+  function create({ mood = 'wink', size = 48, clickable = true, cheeks = true, decorate = null } = {}) {
     const svg = document.createElementNS(NS, 'svg');
     svg.setAttribute('viewBox', '0 0 48 48');
     svg.setAttribute('width', size);
     svg.setAttribute('height', size);
     svg.style.overflow = 'visible'; // squish, shake and sparkle may leave the box
     svg.style.display = 'block';
-    const g = group({ mood, clickable });
+    const g = group({ mood, clickable, cheeks, decorate });
     svg.appendChild(g.el);
     return { el: svg, setMood: g.setMood, destroy: g.destroy, get mood() { return g.mood; } };
   }

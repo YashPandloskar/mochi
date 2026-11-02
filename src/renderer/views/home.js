@@ -23,7 +23,7 @@
   const tokensText = (n) => (n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${Math.round(n / 1e3)}k` : String(n));
   const barColor = (pct) => (pct >= U.dangerAt ? U.colors.danger : pct >= U.warnAt ? U.colors.warn : U.colors.normal);
 
-  const STEP_TEXT = ['Reading files', 'Reading files', 'Making changes', 'Running tests', 'Wrapping up'];
+  const STEP_TEXT = theme.working.stepText;
 
   function create() {
     const el = document.createElement('div');

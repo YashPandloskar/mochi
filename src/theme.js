@@ -54,7 +54,7 @@ const theme = {
     doneTurnGreenAfter: 4.5,
     doneCrossfade: 0.8,
     hoverPollMs: 50,
-    doneToIdleSeconds: 12, // how long "Done" is held before the session returns to idle
+    doneToIdleSeconds: 9, // "Done" holds this long (blue, then green) before the session returns to idle
     staleWorkingSeconds: 300, // no events for this long while working: fall back to idle
     approvalTimeoutSeconds: 100, // then Claude Code's normal prompt takes over
   },
@@ -79,6 +79,54 @@ const theme = {
     equaliserSeconds: [0.9, 1.1, 0.7],
     focusMinutes: 25,
     nav: { height: 30, background: 'rgba(255, 255, 255, 0.07)', activeBackground: 'rgba(255, 255, 255, 0.12)', icon: 'rgba(244, 241, 236, 0.55)' },
+  },
+
+  // Working and Done panels.
+  working: {
+    labels: ['Read', 'Edit', 'Test', 'Done'],
+    stepText: ['Reading files', 'Reading files', 'Making changes', 'Running tests', 'Wrapping up'],
+    cardWidth: 200,
+    barHeight: 4,
+    barGap: 6,
+    barTrack: 'rgba(244, 241, 236, 0.16)',
+    barFill: '#f4f1ec',
+    barSeconds: 0.7, // smooth width transitions
+    skeletonSeconds: 2.4, // skeleton lines and "Running..." pulse
+    typeMsPerChar: 32,
+    cardBackground: 'rgba(255, 255, 255, 0.06)',
+    cardBorder: 'rgba(255, 255, 255, 0.1)',
+    removed: { background: 'rgba(255, 96, 96, 0.18)', color: '#ff9d9d' },
+    added: { background: 'rgba(80, 220, 120, 0.16)', color: '#8df0a8' },
+    passed: '#8df0a8',
+  },
+  done: {
+    confettiPieces: 12,
+    confettiColors: ['#ffd07a', '#7dffa8', '#ff9a5c', '#8fb8ff', '#ff7a9c', '#f4f1ec'],
+    jumps: 3,
+    jumpPx: 14,
+    jumpSeconds: 1.5,
+    sweepStaggerSeconds: 0.15,
+    bubbleBackground: 'rgba(255, 255, 255, 0.12)',
+    bubbleChars: 170,
+    turnGreenAfterSeconds: 4.5,
+  },
+
+  // Mochi at a laptop (viewBox 96x88). Mochi himself is the unchanged component; this only places and tints him.
+  laptop: {
+    mochiTransform: 'translate(13.2 2) scale(1.45)',
+    lid: '#d8d5ce',
+    lidStroke: '#b9b5ab',
+    logo: '#e0793a',
+    leak: '#cfe9ff',
+    base: '#bcb8ae',
+    tint: '#bfe4ff',
+    tintOpacity: [0.5, 0.62],
+    tintSeconds: 4,
+    reflection: '#d6ecff',
+    driftPx: 1.2,
+    driftSeconds: 5,
+    breatheScale: 1.012,
+    breatheSeconds: 6,
   },
 
   // Claude tile usage footer. Bars come from the status line; the fallback scans local logs.
