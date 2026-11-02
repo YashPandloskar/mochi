@@ -54,7 +54,7 @@ function readJson(file, fallback) {
   }
 }
 
-function removeMochiHooks(settings) {
+function removeMochiHooks(settings, keepEmpty) {
   const hooks = settings.hooks;
   if (!hooks) return;
   for (const ev of Object.keys(hooks)) {
@@ -63,7 +63,8 @@ function removeMochiHooks(settings) {
       .filter((g) => g.hooks.length > 0);
     if (hooks[ev].length === 0) delete hooks[ev];
   }
-  if (Object.keys(hooks).length === 0) delete settings.hooks;
+  // on install the key stays so it keeps its position in the file (no cosmetic diff on re-run)
+  if (!keepEmpty && Object.keys(hooks).length === 0) delete settings.hooks;
 }
 
 function plan() {
@@ -72,7 +73,7 @@ function plan() {
   const cfg = readJson(configPath, {});
   const cfgNext = { ...cfg };
 
-  removeMochiHooks(next);
+  removeMochiHooks(next, mode === 'install');
 
   if (mode === 'install') {
     next.hooks = next.hooks || {};
