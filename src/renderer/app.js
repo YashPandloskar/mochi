@@ -519,4 +519,37 @@
   content.style.visibility = 'hidden';
   applyGeometry();
   buildEyes();
+
+  // The first time each panel is shown the browser has to lay it out, shape its text and rasterise it, which
+  // can drop a frame or three mid-animation. Do that work once, invisibly, shortly after start-up: every panel is
+  // drawn for two frames at ~0.4% opacity (below what a display can show) inside the otherwise empty window.
+  function warmUp() {
+    if (expanded) return;
+    const keys = Object.keys(views);
+    const widest = Math.max(...Object.values(theme.panels).map((p) => p.heightWithNav || p.height));
+    notch.style.transition = 'none';
+    notch.style.opacity = '0.004';
+    notch.style.width = theme.expanded.width + 'px';
+    notch.style.height = widest + 'px';
+    content.style.visibility = 'visible';
+    content.style.opacity = '1';
+    let i = 0;
+    const finish = () => {
+      notch.style.transition = '';
+      notch.style.opacity = '';
+      content.style.opacity = '';
+      if (expanded) return; // the notch was opened meanwhile: expand() has already set everything else
+      content.style.visibility = 'hidden';
+      showView();
+      applyGeometry();
+    };
+    const step = () => {
+      if (expanded || i >= keys.length) return finish();
+      keys.forEach((k, n) => (views[k].el.style.display = n === i ? '' : 'none'));
+      i++;
+      requestAnimationFrame(() => requestAnimationFrame(step));
+    };
+    step();
+  }
+  setTimeout(warmUp, 300); // right at start-up, while nothing is moving yet
 })();
