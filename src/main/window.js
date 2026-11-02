@@ -8,6 +8,8 @@ let hovering = false;
 let pollTimer = null;
 let topTimer = null;
 let visible = true;
+let holdH = 0; // taller hit area kept for a moment after switching to a shorter panel
+let holdUntil = 0;
 let insideSince = 0; // when the pointer entered the collapsed notch (for the hover dwell)
 
 function pickDisplay(monitor) {
@@ -63,10 +65,15 @@ function create(cfg) {
   pollTimer = setInterval(poll, theme.timings.hoverPollMs);
   // Windows can slip another window (for example a maximized Claude) above an always-on-top window.
   // Re-assert the top position once a second; it does not take focus.
-  topTimer = setInterval(() => visible && win && !win.isDestroyed() && win.moveTop(), 1000);
+  topTimer = setInterval(() => {
+    if (!visible || !win || win.isDestroyed()) return;
+    win.moveTop();
+    applyMouse(); // cheap safety net: the click-through state can never stay out of step with the hover state
+  }, 1000);
   win.on('blur', () => {
     if (!win.isFocusable()) return;
     win.setFocusable(false);
+    applyMouse();
     win.webContents.send('window:blur');
   });
   win.on('closed', () => {
@@ -86,7 +93,8 @@ function poll() {
   const left = (b.width - hitSize.w) / 2;
   const x = pt.x - b.x;
   const y = pt.y - b.y;
-  let inside = x >= left && x <= left + hitSize.w && y >= 0 && y <= hitSize.h;
+  const h = Date.now() < holdUntil ? Math.max(hitSize.h, holdH) : hitSize.h;
+  let inside = x >= left && x <= left + hitSize.w && y >= 0 && y <= h;
 
   // A flick across the top of the screen must not open the notch: when it is collapsed the pointer
   // has to rest on it for a moment first. An already-open panel responds at once.
@@ -113,6 +121,13 @@ function setFocus(on) {
     win.blur();
     win.setFocusable(false);
   }
+  applyMouse();
+}
+
+// Changing focusability on Windows resets the window's click-through state, which left the notch showing but
+// letting every click fall through to the window behind it. Re-assert what the hover logic last decided.
+function applyMouse() {
+  if (win && !win.isDestroyed()) win.setIgnoreMouseEvents(!hovering, { forward: true });
 }
 
 // Hides the notch completely (game mode / paused) or brings it back, without stealing focus.
@@ -131,6 +146,13 @@ function setVisible(on) {
 
 // Renderer reports the size it is animating towards so the hit area follows it.
 function setHitSize(size) {
+  // Switching to a shorter panel (Notes -> Home) moves its bottom edge up past the pointer, which used to count
+  // as leaving the notch: it collapsed, and the next clicks fell through to the window behind. Keep the old,
+  // taller area for a moment so the pointer stays "inside" while you aim at the new panel.
+  if (!hitSize.collapsed && !size.collapsed && size.h < hitSize.h) {
+    holdH = Date.now() < holdUntil ? Math.max(holdH, hitSize.h) : hitSize.h;
+    holdUntil = Date.now() + theme.timings.hitHoldMs;
+  } else if (size.collapsed) holdUntil = 0;
   hitSize = size;
 }
 
