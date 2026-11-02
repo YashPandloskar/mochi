@@ -181,7 +181,7 @@ app.whenReady().then(() => {
 
   // ---------- go ----------
   usage.start();
-  // breaks.start(); // switched on once the renderer has the break panel wired (see README / next steps)
+  breaks.start();
   music.start();
   game.start();
   // MOCHI_PORT lets a test copy run without receiving the real hook events

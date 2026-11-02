@@ -221,3 +221,28 @@ html, body {
 #bubble.show.paused { opacity: var(--bubble-paused); }
 #bubble.hide-expanded { opacity: 0; }
 .bart { width: var(--bubble-art); height: var(--bubble-art); border-radius: 50%; background: rgba(255, 255, 255, 0.14) center / cover no-repeat; }
+
+/* ---------- personality: nap, wake blink, dance (collapsed eyes) ---------- */
+.eye { transition: height var(--nap-s) ease-in-out; } /* eyes close slowly when he naps */
+.eyes.nap[data-state='idle'] .eye { height: 2px; opacity: 0.75; animation: pulse var(--pulse) ease-in-out infinite; }
+.eyes.wake[data-state='idle'] .eye { animation: pulse var(--pulse) ease-in-out infinite, wake-blink 0.5s ease-out 1; transition-duration: 0.12s; }
+@keyframes wake-blink { 0% { transform: scaleY(0.1); } 60% { transform: scaleY(1.2); } 100% { transform: scaleY(1); } }
+.zzz { position: absolute; left: calc(50% + 24px); top: 3px; width: 20px; height: 24px; pointer-events: none; }
+.zzz i {
+  position: absolute;
+  left: 0;
+  top: 8px;
+  font-style: normal;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--ec);
+  opacity: 0;
+  animation: z-float var(--z-s) ease-in infinite;
+}
+.zzz i:nth-child(2) { font-size: 7px; animation-delay: calc(var(--z-s) / 2); }
+@keyframes z-float { 0% { transform: translate(0, 6px); opacity: 0; } 25% { opacity: 0.9; } 100% { transform: translate(9px, -8px); opacity: 0; } }
+.eyes.dance[data-state='idle'] { animation: dance-eyes var(--dance-s) ease-in-out infinite; }
+@keyframes dance-eyes {
+  0%, 100% { transform: translateX(calc(var(--dance-sway) * -1)) rotate(calc(var(--dance-tilt) * -1)); }
+  50% { transform: translateX(var(--dance-sway)) rotate(var(--dance-tilt)); }
+}

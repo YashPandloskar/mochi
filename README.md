@@ -77,12 +77,25 @@ takes over (it has no nav bar). The nav bar can be taken off the Working and Don
 
 Both hide while the panel is open, and while game mode or Pause has the notch hidden.
 
+## Mochi's personality
+
+All of it can be switched off with **Mochi personality** in the tray menu. Times and values are in `personality` in `src/theme.js`.
+
+- **Nap:** after 10 idle minutes (nothing happening, not hovered, no timer, no music) his eyes slowly close and a tiny "z" drifts up. Anything that happens wakes him with a blink.
+- **Dancing:** while Apple Music plays he sways gently: the collapsed eyes, the little Mochi on Home and the one on the Music tab. It is a steady, gentle rhythm, not synced to the beat (Apple Music does not share the tempo).
+- **Break reminders:** after about 50 minutes of continuous Claude work (a gap of 5 minutes ends it) a green panel opens with a stretch / 20-20-20 suggestion. **Eye rest** runs a 20 second countdown, **Later** asks again in 10 minutes, **Skip** dismisses. Ignored for a minute it counts as Later. Nothing is shown while paused or while a game is in front.
+- **Time of day:** droopy, slower eyes from 23:00 to 05:00 and wider, livelier eyes from 06:00 to 10:00.
+- **Milestone:** when "jobs today" reaches 5, 10, 15, 20, 30, 40 or 50 the Done panel adds a "★ 5th job today" badge and extra confetti.
+
+The tray's **Preview personality** menu shows nap, wake, the break reminder and the night / morning looks without waiting.
+
 ## Tray settings
 
 | Setting | What it does |
 |---|---|
 | Pause notch (Ctrl+Alt+M) | Hides the notch; no panels, sounds or toasts until you unpause |
 | Hide while gaming | Hides the notch while Valorant or Dota 2 is the active window (list: `games` in `src/theme.js`) |
+| Mochi personality | Nap, dancing, break reminders, time-of-day looks, milestones |
 | Sounds | Soft chime on Done, Needs you and Focus finished |
 | Show usage on Claude tile | 5h / Week plan bars (or an approximate token count) |
 | Music module | Apple Music now-playing and controls |

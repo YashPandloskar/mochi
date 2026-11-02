@@ -79,6 +79,18 @@
     '--bubble-bg': theme.companions.music.background,
     '--bubble-art': theme.companions.music.art + 'px',
     '--bubble-paused': theme.companions.music.pausedOpacity,
+    '--brk-chip': theme.breakPanel.chipColor,
+    '--brk-chip-bg': theme.breakPanel.chipBackground,
+    '--brk-btn': theme.breakPanel.buttonBackground,
+    '--brk-btn-fg': theme.breakPanel.buttonColor,
+    '--brk-ring': theme.breakPanel.ring,
+    '--dance-s': theme.personality.dance.seconds + 's',
+    '--dance-sway': theme.personality.dance.swayPx + 'px',
+    '--dance-tilt': theme.personality.dance.tiltDeg + 'deg',
+    '--dance-head-tilt': theme.personality.dance.headerTiltDeg + 'deg',
+    '--dance-bob': theme.personality.dance.headerBobPx + 'px',
+    '--nap-s': theme.personality.nap.closeSeconds + 's',
+    '--z-s': theme.personality.nap.zSeconds + 's',
     '--lean': theme.lively.leanScale,
     '--lean-s': theme.lively.leanSeconds + 's',
     '--dots-s': theme.lively.typingDotsSeconds + 's',
@@ -94,6 +106,7 @@
   let greenTimer = null;
   let lastSession = null;
   let lastMusic = null;
+  let breakActive = false; // the break reminder is showing
   let timerOn = false; // the Focus timer is counting: the collapsed notch widens to show it
   const bubble = document.getElementById('bubble');
   const bart = document.getElementById('bart');
@@ -107,7 +120,7 @@
   document.documentElement.dataset.motion = motion;
 
   // Needs-you and Done open by themselves; Working stays as eyes until you hover.
-  const autoOpens = () => state === 'needs' || state === 'done';
+  const autoOpens = () => state === 'needs' || state === 'done' || breakActive;
 
   // ---------- panel views ----------
   const home = window.HomeView.create();
@@ -122,13 +135,25 @@
     },
   });
   const focus = window.FocusView.create();
-  const views = { home, working, done, needs, claudeIdle, music, focus };
+  const brk = window.BreakView.create({
+    onAnswer: (action) => {
+      breakActive = false;
+      window.mochi.breakAnswer(action);
+      if (expanded) {
+        showView();
+        applyGeometry();
+      }
+      scheduleCollapse();
+    },
+  });
+  const views = { home, working, done, needs, claudeIdle, music, focus, break: brk };
 
   content.append(...Object.values(views).map((v) => v.el));
 
   // Which panel is showing: Needs-you always wins; otherwise the nav tab decides.
   function viewKey() {
     if (state === 'needs') return 'needs';
+    if (breakActive) return 'break';
     if (tab === 'claude') return state === 'working' ? 'working' : state === 'done' ? 'done' : 'claudeIdle';
     return tab;
   }
@@ -269,9 +294,13 @@
     const set = (k, v) => eyesEl.style.setProperty(k, v);
     set('--ec', cfg.color);
     set('--ew', cfg.width + 'px');
-    set('--eh', cfg.height + 'px');
-    set('--pulse', (cfg.pulse || 2.4) + 's');
-    set('--blink', (cfg.blink || 4) + 's');
+    // time-of-day look (idle eyes only): droopy at night, wider and livelier in the morning
+    const P = theme.personality;
+    const look = state === 'idle' ? Personality.snapshot().look : 'day';
+    const scale = look === 'night' ? P.night.eyeScale : look === 'morning' ? P.morning.eyeScale : 1;
+    set('--eh', cfg.height * scale + 'px');
+    set('--pulse', (cfg.pulse || 2.4) * (look === 'morning' ? P.morning.pulseScale : 1) + 's');
+    set('--blink', (look === 'night' ? P.night.blinkSeconds : cfg.blink || 4) + 's');
     set('--g-near', shadow(g.near, cfg.color));
     set('--g-far', shadow(g.far, cfg.color));
     set('--g-near-p', shadow(g.nearPulse, cfg.color));
@@ -294,6 +323,7 @@
       eye.className = 'eye';
       eyesEl.appendChild(eye);
     }
+    applyEyeClasses(false);
     if (lively) {
       // lively only: a thin scanning line under the eyes (subtle mode has no sweep line)
       const sweep = document.createElement('div');
@@ -345,11 +375,15 @@
     hover = inside;
     clearTimeout(collapseTimer);
     if (inside) {
+      poke();
       expand();
       if (state === 'done') turnGreen();
     } else scheduleCollapse();
   });
-  window.mochi.onState(setState);
+  window.mochi.onState((s) => {
+    poke();
+    setState(s);
+  });
   window.mochi.onSession((session) => {
     lastSession = session;
     home.update({ session });
@@ -359,6 +393,7 @@
     claudeIdle.update(session);
   });
   window.mochi.onSettings((s) => {
+    if (s.personality !== undefined) Personality.setEnabled(s.personality);
     if (s.focusMinutes) Focus.setMinutes(s.focusMinutes, false);
     if (s.motion && s.motion !== motion) {
       motion = s.motion;
@@ -370,10 +405,63 @@
   window.mochi.onUsage((usage) => home.update({ usage }));
   window.mochi.onMusic((m) => {
     lastMusic = m;
+    Personality.setMusic(m && m.enabled && m.status === 'playing');
     refreshBubble(m);
     home.update({ music: m });
     music.update(m);
   });
+
+  // ---------- personality: nap, dance, looks ----------
+  // Nap and dance are toggled as classes (so the eyes close slowly); the time-of-day look rebuilds the eyes.
+  function applyEyeClasses(wake) {
+    const s = Personality.snapshot();
+    const idle = state === 'idle';
+    const nap = idle && s.napping;
+    eyesEl.classList.toggle('nap', nap);
+    eyesEl.classList.toggle('dance', idle && s.dancing);
+    let z = eyesEl.querySelector('.zzz');
+    if (nap && !z) {
+      z = document.createElement('span');
+      z.className = 'zzz';
+      z.innerHTML = '<i>z</i><i>z</i>';
+      eyesEl.appendChild(z);
+    }
+    if (!nap && z) z.remove();
+    if (wake) {
+      eyesEl.classList.add('wake'); // wakes with a blink
+      setTimeout(() => eyesEl.classList.remove('wake'), 700);
+    }
+  }
+
+  let lastLook = 'day';
+  let wasNapping = false;
+  Personality.init({
+    canNap: () => state === 'idle' && !expanded && !hover && !timerOn,
+    onChange: (snap) => {
+      home.setLook(snap);
+      music.setLook(snap);
+      if (snap.look !== lastLook) {
+        lastLook = snap.look;
+        buildEyes();
+      } else {
+        applyEyeClasses(wasNapping && !snap.napping);
+      }
+      wasNapping = snap.napping;
+    },
+  });
+  const poke = () => Personality.activity();
+  Focus.onChange(poke);
+
+  window.mochi.onBreak((info) => {
+    poke();
+    breakActive = true;
+    brk.show(info);
+    if (expanded) {
+      showView();
+      applyGeometry();
+    } else expand();
+  });
+  window.mochi.onPersonality((kind) => Personality.preview(kind));
 
   content.style.visibility = 'hidden';
   applyGeometry();
