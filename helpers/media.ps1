@@ -82,6 +82,8 @@ function Send($obj) {
 
 $lastKey = ''
 $lastArtKey = ''
+$lastArtLen = 0     # size of the artwork last sent: a different size means the real cover arrived
+$artChecks = 0      # periodic re-checks left for the current track
 $lastEmit = [DateTime]::MinValue
 
 while ($state.open) {
@@ -119,6 +121,15 @@ while ($state.open) {
             $key = "$status|$artKey"
             $due = ([DateTime]::UtcNow - $lastEmit).TotalSeconds -ge 5   # periodic timeline resync
 
+            # Apple Music can report a placeholder first and the real cover a moment later:
+            # re-read the artwork on the periodic resyncs for the first minute of a track
+            $newArt = $null
+            if ($key -eq $lastKey -and $due -and $artChecks -gt 0) {
+                $artChecks--
+                $candidate = Get-Art $props
+                if ($candidate -and $candidate.Length -ne $lastArtLen) { $newArt = $candidate }
+            }
+
             if ($key -ne $lastKey -or $due) {
                 $msg = @{
                     status   = $status
@@ -130,7 +141,14 @@ while ($state.open) {
                     duration = [math]::Round(($tl.EndTime - $tl.StartTime).TotalSeconds, 1)
                     at       = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
                 }
-                if ($artKey -ne $lastArtKey) { $msg.art = Get-Art $props; $lastArtKey = $artKey }
+                if ($artKey -ne $lastArtKey) {
+                    $msg.art = Get-Art $props
+                    $lastArtKey = $artKey
+                    $artChecks = 12
+                } elseif ($newArt) {
+                    $msg.art = $newArt
+                }
+                if ($msg.ContainsKey('art') -and $msg.art) { $lastArtLen = $msg.art.Length }
                 Send $msg
                 $lastKey = $key
                 $lastEmit = [DateTime]::UtcNow

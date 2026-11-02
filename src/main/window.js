@@ -6,6 +6,7 @@ let win = null;
 let hitSize = { w: theme.collapsed.width, h: theme.collapsed.height, collapsed: true };
 let hovering = false;
 let pollTimer = null;
+let topTimer = null;
 let visible = true;
 let insideSince = 0; // when the pointer entered the collapsed notch (for the hover dwell)
 
@@ -60,8 +61,12 @@ function create(cfg) {
   // Click-through: the window ignores the mouse except while the pointer is over the notch.
   // Polling the cursor is more reliable than forwarded mousemove events.
   pollTimer = setInterval(poll, theme.timings.hoverPollMs);
+  // Windows can slip another window (for example a maximized Claude) above an always-on-top window.
+  // Re-assert the top position once a second; it does not take focus.
+  topTimer = setInterval(() => visible && win && !win.isDestroyed() && win.moveTop(), 1000);
   win.on('closed', () => {
     clearInterval(pollTimer);
+    clearInterval(topTimer);
     win = null;
   });
   screen.on('display-metrics-changed', () => win && place(currentMonitor));

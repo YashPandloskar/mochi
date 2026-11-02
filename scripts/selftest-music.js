@@ -17,6 +17,11 @@ assert.strictEqual(m.current.art, 'data:image/jpeg;base64,AAAA');
 assert.strictEqual(m.current.position, 15);
 ok('artwork is kept across timeline resyncs of the same track');
 
+// Apple Music can report a placeholder first and the real cover later: a new cover for the same track replaces it
+feed({ status: 'playing', title: 'A', artist: 'X', album: 'Y', artKey: 'A|X|Y', art: 'data:image/jpeg;base64,REALCOVER', position: 20, duration: 100, at: 3 });
+assert.strictEqual(m.current.art, 'data:image/jpeg;base64,REALCOVER');
+ok('a later, different cover for the same track replaces the placeholder');
+
 // a new track without artwork must not show the previous cover
 feed({ status: 'playing', title: 'B', artist: 'X', album: 'Y', artKey: 'B|X|Y', position: 0, duration: 90, at: 3 });
 assert.strictEqual(m.current.art, null);

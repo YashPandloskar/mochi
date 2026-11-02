@@ -42,7 +42,7 @@ function readBody(req) {
 //   POST /event     hook JSON, returns immediately
 //   POST /approval  PermissionRequest JSON, held open until Allow/Deny/timeout;
 //                   the response body is exactly what the hook script should print
-function start({ port, token, state }) {
+function start({ port, token, state, extra = () => ({}) }) {
   const hostOk = new Set([`127.0.0.1:${port}`, `localhost:${port}`]);
 
   const server = http.createServer(async (req, res) => {
@@ -56,7 +56,7 @@ function start({ port, token, state }) {
       if (!tokenOk(req.headers['x-mochi-token'], token)) return reply(401);
 
       if (req.method === 'GET' && req.url === '/health') return reply(200, '{"ok":true}');
-      if (req.method === 'GET' && req.url === '/state') return reply(200, JSON.stringify(state.snapshot()));
+      if (req.method === 'GET' && req.url === '/state') return reply(200, JSON.stringify({ ...state.snapshot(), ...extra() }));
       if (req.method !== 'POST') return reply(405);
 
       let ev;

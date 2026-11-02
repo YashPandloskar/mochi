@@ -57,6 +57,14 @@ app.whenReady().then(() => {
   const quiet = () => settings.paused || game.active;
 
   function applyQuiet() {
+    // visibility.log: every show/hide with its reason, to find out why the notch is not on screen
+    try {
+      require('fs').appendFileSync(
+        require('path').join(config.configDir(), 'visibility.log'),
+        `${new Date().toISOString()} visible=${!quiet()} paused=${settings.paused} game=${game.active} exe=${game.exe}
+`
+      );
+    } catch {}
     windowMgr.setVisible(!quiet());
     if (!quiet() && missedDone) {
       missedDone = false;
@@ -185,7 +193,12 @@ app.whenReady().then(() => {
   music.start();
   game.start();
   // MOCHI_PORT lets a test copy run without receiving the real hook events
-  server.start({ port: Number(process.env.MOCHI_PORT) || cfg.port, token: cfg.token, state });
+  server.start({
+    port: Number(process.env.MOCHI_PORT) || cfg.port,
+    token: cfg.token,
+    state,
+    extra: () => ({ quiet: { paused: settings.paused, gameActive: game.active, foregroundExe: game.exe, gameMode: settings.gameMode } }),
+  });
 
   // Dev aid: `npm start -- --preview-state=needs`. An explicit flag, not an environment variable,
   // so a value left behind in a terminal can never force a state on a normal start.
