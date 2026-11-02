@@ -8,7 +8,9 @@ const SessionState = require('./session-state');
 const Usage = require('./usage');
 
 app.setName('mochi');
-if (!app.requestSingleInstanceLock()) app.quit();
+// A second copy must do nothing at all: no window, no server, no config writes.
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) app.exit(0);
 
 ipcMain.on('theme:get', (e) => {
   e.returnValue = theme;
@@ -16,6 +18,7 @@ ipcMain.on('theme:get', (e) => {
 ipcMain.on('hit:size', (_e, size) => windowMgr.setHitSize(size));
 
 app.whenReady().then(() => {
+  if (!gotLock) return;
   const cfg = config.load();
   const state = new SessionState({
     jobs: cfg.jobs,
