@@ -51,10 +51,10 @@
     }
   }
 
-  // moves the virtual clock to frame number n and runs everything that was due
-  function advance(n) {
-    const target = n * FRAME;
-    const dt = target - vt;
+  // moves the virtual clock to `target` (ms) and runs everything that was due; the step may be shorter or longer
+  // than a frame, which is how slow motion and speed ramps are made
+  function advance(target) {
+    const dt = Math.max(0, target - vt);
     for (;;) {
       let best = null;
       let bestId = 0;

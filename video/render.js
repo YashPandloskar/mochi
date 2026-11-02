@@ -110,15 +110,18 @@
     const started = performance.now();
     const wall = Date.now();
     window.__film.run();
-    let step = 0;
+    // Output frame k is always 1/60 s after frame k-1; how much film time passes between them is the speed
+    // (1 normally, less in slow motion, more in a fast-forward). Output time T = k/60 is what the audio follows.
+    let n = 0; // frames stepped before the film starts
+    let vt = 0; // virtual milliseconds of the frame about to be produced
     let k = 0;
-    const t0 = () => window.__film.t0();
     for (;;) {
-      step++;
-      V.advance(step);
-      await settle();
       const f = window.__film;
-      if (f.t0() > 0 && V.now() >= f.t0() - 1e-6) {
+      const started = f.t0() > 0 && vt >= f.t0() - 1e-3;
+      f.T = started ? k / FPS : 0;
+      V.advance(vt);
+      await settle();
+      if (started) {
         const buf = await window.__rec.grab();
         if (buf.length !== W * H * 4) throw new Error('unexpected frame size ' + buf.length);
         const ts = Math.round((k * 1e6) / FPS);
@@ -127,9 +130,11 @@
         frame.close();
         k++;
         if (venc.encodeQueueSize > 4) await new Promise((r) => venc.addEventListener('dequeue', r, { once: true }));
-        if (k % 120 === 0) LOG(`frame ${k} (film ${(k / FPS).toFixed(1)} s), ${(((Date.now() - wall) / 1000) | 0)} s elapsed`);
+        if (k % 120 === 0) LOG(`frame ${k} (output ${(k / FPS).toFixed(1)} s, film ${((V.now() - f.t0()) / 1000).toFixed(1)} s)`);
       }
       if (f.finished) break;
+      if (started) vt += V.FRAME * f.speed(f.T);
+      else vt = ++n * V.FRAME;
     }
     await venc.flush();
     LOG(`video done: ${k} frames, ${vchunks.length} chunks`);

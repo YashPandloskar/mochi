@@ -5,12 +5,12 @@
 (() => {
   const RENDER = !!(window.__rec && window.__rec.options.render); // frame-exact render: the whole mix is built offline
   const RealAC = window.AudioContext;
-  const ctx = RENDER ? new OfflineAudioContext(2, 48000 * 104, 48000) : new RealAC({ sampleRate: 48000, latencyHint: 'playback' });
+  const ctx = RENDER ? new OfflineAudioContext(2, 48000 * 108, 48000) : new RealAC({ sampleRate: 48000, latencyHint: 'playback' });
   const speakers = ctx.destination;
   const streamDest = RENDER ? null : ctx.createMediaStreamDestination(); // what gets recorded in real time
   if (RENDER) {
     // chimes and taps ask the context what time it is: in a render that is the film's clock
-    Object.defineProperty(ctx, 'currentTime', { get: () => (window.__film ? Math.max(0, window.__film.now()) : 0) });
+    Object.defineProperty(ctx, 'currentTime', { get: () => (window.__film ? window.__film.T || 0 : 0) });
   }
 
   const master = ctx.createGain();
@@ -112,7 +112,12 @@
     ctx,
     stream: streamDest ? streamDest.stream : null,
     resume: () => (RENDER ? Promise.resolve() : ctx.resume()),
-    now: () => (RENDER ? Math.max(0, window.__film.now()) : ctx.currentTime), // the film's clock, in audio time
+    now: () => (RENDER ? window.__film.T || 0 : ctx.currentTime), // the frame being rendered, in audio time
+    // Mochi dozing off: a few soft notes sinking; and waking: the same notes lifting
+    lullaby(t, up = false) {
+      const notes = up ? [67, 72, 76, 79] : [79, 74, 70, 67];
+      notes.forEach((m, i) => S.pluck(t + i * 0.34, m - 12, 0.07));
+    },
     render: () => ctx.startRendering(),
 
     // soft evolving chord
@@ -334,7 +339,7 @@
   ];
   // [from second, level]: 0 pad only; 1 + bass; 2 + arp; 3 + beat; 4 beat + fuller arp; 5 soft (no beat); 6 clock; 7 sparse
   const SECTIONS = [
-    [0, 0], [5, 1], [10, 2], [20, 3], [28, 4], [42, 5], [51, 6], [62, 5], [70, 3], [81, 7], [88, 8],
+    [0, 0], [5, 1], [10, 2], [20, 3], [28, 4], [42, 5], [51, 6], [62, 5], [70, 3], [81, 7], [90, 8],
   ];
   const levelAt = (t) => SECTIONS.reduce((l, [from, lv]) => (t >= from ? lv : l), 0);
 
@@ -369,8 +374,8 @@
         for (let i = 0; i < 5; i++) S.tick(t + i * (BAR / 5), i === 0 ? 0.08 : 0.05, i === 0 ? 2200 : 1700);
       }
     }
-    S.pad(T0 + 88, [55, 60, 64, 67, 71], 9, 0.1);
-    S.bass(T0 + 88, 36, 8, 0.26);
+    S.pad(T0 + 90, [55, 60, 64, 67, 71], 11, 0.1);
+    S.bass(T0 + 90, 36, 10, 0.26);
   };
   window.Score = S;
 })();

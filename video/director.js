@@ -34,7 +34,39 @@
       return 3 * (1 - m) * (1 - m) * m * y1 + 3 * (1 - m) * m * m * y2 + m * m * m;
     };
   }
-  const E = { inOut: bez(0.65, 0, 0.35, 1), out: bez(0.16, 1, 0.3, 1), cine: bez(0.7, 0, 0.16, 1), soft: bez(0.45, 0.05, 0.2, 1), lin: (t) => t, glide: bez(0.3, 0, 0.1, 1) };
+  // damped spring: overshoots the target and settles (zeta lower = bouncier)
+  const spring = (zeta = 0.55, cycles = 1.25) => {
+    const a = 7 * zeta;
+    const b = Math.PI * 2 * cycles;
+    const f = (t) => 1 - Math.exp(-a * t) * Math.cos(b * t);
+    const end = f(1);
+    return (t) => f(t) / end;
+  };
+  const E = {
+    inOut: bez(0.65, 0, 0.35, 1),
+    out: bez(0.16, 1, 0.3, 1),
+    cine: bez(0.7, 0, 0.16, 1),
+    soft: bez(0.45, 0.05, 0.2, 1),
+    lin: (t) => t,
+    glide: bez(0.3, 0, 0.1, 1),
+    outExpo: (t) => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t)),
+    inExpo: (t) => (t <= 0 ? 0 : Math.pow(2, 10 * t - 10)),
+    inQuart: bez(0.5, 0, 0.75, 0),
+    whip: bez(0.86, 0, 0.12, 1), // slow start, violent middle, hard stop
+    drift: bez(0.25, 0.6, 0.3, 1), // gentle, long settle
+    hand: bez(0.2, 0.85, 0.3, 1), // a person's pointer: quick launch, slow landing
+    spring: spring(0.5, 1.2),
+    springSoft: spring(0.7, 1.0),
+  };
+
+  // seeded randomness so every render is identical
+  let seed = 20241102;
+  const rnd = () => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 
   let t0 = 0;
   const now = () => (performance.now() - t0) / 1000;
@@ -65,12 +97,22 @@
   const cam = { x: 960, y: 15, s: 6.8 };
   const prev = { ...cam };
   const shake = { x: 0, y: 0 };
+  // a handheld camera is never perfectly still: slow, overlapping sways in position, a hair of roll, a slow breath
+  const sway = (t) => ({
+    x: 3.4 * Math.sin(t * 0.61 + 1) + 2.0 * Math.sin(t * 1.37 + 4) + 0.7 * Math.sin(t * 3.1),
+    y: 2.8 * Math.sin(t * 0.53) + 1.6 * Math.sin(t * 1.11 + 2) + 0.6 * Math.sin(t * 2.7 + 1),
+    r: 0.1 * Math.sin(t * 0.37 + 3) + 0.05 * Math.sin(t * 0.83),
+    s: 1 + 0.007 * Math.sin(t * 0.5 + 0.5),
+  });
+  let swayAmt = 1; // 0 = locked off (titles), 1 = handheld
   function renderCam() {
-    const tx = 960 - cam.x * cam.s + shake.x;
-    const ty = 540 - cam.y * cam.s + shake.y;
-    world.style.transform = `translate3d(${tx.toFixed(2)}px, ${ty.toFixed(2)}px, 0) scale(${cam.s.toFixed(5)})`;
+    const h = sway(now());
+    const s = cam.s * (1 + (h.s - 1) * swayAmt);
+    const tx = 960 - cam.x * s + shake.x + h.x * swayAmt;
+    const ty = 540 - cam.y * s + shake.y + h.y * swayAmt;
+    world.style.transform = `translate(960px, 540px) rotate(${(h.r * swayAmt).toFixed(3)}deg) translate(-960px, -540px) translate3d(${tx.toFixed(2)}px, ${ty.toFixed(2)}px, 0) scale(${s.toFixed(5)})`;
     const speed = Math.abs(Math.log(cam.s / prev.s)) * 230 + (Math.hypot(cam.x - prev.x, cam.y - prev.y) * cam.s) / 20;
-    const blur = Math.min(4.2, Math.max(0, speed - 1.0));
+    const blur = Math.min(5.2, Math.max(0, speed - 1.0));
     world.style.filter = blur > 0.25 ? `blur(${blur.toFixed(2)}px)` : '';
     prev.x = cam.x;
     prev.y = cam.y;
@@ -89,9 +131,13 @@
     });
   }
   const camSet = (t) => Object.assign(cam, t);
+  // anticipation: a small pull-back before a big push, like an operator winding up
+  async function windUp(amount = 0.035, dur = 0.28) {
+    await camTo({ s: cam.s * (1 - amount) }, dur, E.out);
+  }
   // a small hit of camera shake that dies away (on impacts)
   function kick(amount = 14, dur = 0.7) {
-    const sx = Math.random() > 0.5 ? 1 : -1;
+    const sx = rnd() > 0.5 ? 1 : -1;
     return tween(dur, E.lin, (p) => {
       const k = Math.pow(1 - p, 2.4) * amount;
       shake.x = Math.sin(p * 38) * k * sx;
@@ -115,20 +161,39 @@
     cursorEl.style.transition = `opacity ${dur}s`;
     cursorEl.style.opacity = on ? 1 : 0;
   }
-  function cursorTo(x, y, dur = 1, ease = E.soft) {
+  // A hand, not a robot: it launches quickly and lands slowly, takes a slightly curved path that is different every
+  // time, overshoots long moves and corrects, and trembles a little while it travels.
+  async function cursorTo(x, y, dur = 1, ease = E.hand) {
     const a = { ...cur };
-    const dx = x - a.x;
-    const dy = y - a.y;
+    const len0 = Math.max(1, Math.hypot(x - a.x, y - a.y));
+    const long = len0 > 380;
+    const d = dur * (0.88 + rnd() * 0.3);
+    const ox = long ? (x - a.x) / len0 * (10 + rnd() * 10) : 0; // overshoot, then correct
+    const oy = long ? (y - a.y) / len0 * (10 + rnd() * 10) : 0;
+    const tx = x + ox;
+    const ty = y + oy;
+    const dx = tx - a.x;
+    const dy = ty - a.y;
     const len = Math.max(1, Math.hypot(dx, dy));
     const nx = -dy / len;
     const ny = dx / len;
-    const bow = Math.min(40, len * 0.1);
-    return tween(dur, ease, (p) => {
+    const bow = (rnd() > 0.5 ? 1 : -1) * Math.min(70, len * (0.06 + rnd() * 0.1));
+    const ph = rnd() * 6;
+    await tween(d, ease, (p) => {
       const arc = Math.sin(p * Math.PI) * bow;
-      cur.x = a.x + dx * p + nx * arc;
-      cur.y = a.y + dy * p + ny * arc;
+      const tremor = Math.sin(p * 40 + ph) * 0.7 * Math.sin(p * Math.PI);
+      cur.x = a.x + dx * p + nx * (arc + tremor);
+      cur.y = a.y + dy * p + ny * (arc + tremor * 0.8);
       placeCursor();
     });
+    if (long) {
+      const b = { ...cur };
+      await tween(0.16 + rnd() * 0.08, E.out, (p) => {
+        cur.x = b.x + (x - b.x) * p;
+        cur.y = b.y + (y - b.y) * p;
+        placeCursor();
+      });
+    }
   }
   function worldOf(el, ax = 0.5, ay = 0.5) {
     const r = el.getBoundingClientRect();
@@ -148,10 +213,11 @@
   }
   async function pointAndClick(el, { dur = 0.9, then = null, ax = 0.5, ay = 0.5 } = {}) {
     const p = worldOf(el, ax, ay);
-    await cursorTo(p.x, p.y, dur);
-    await wait(0.12);
+    // aim at a point on the target that is not quite its centre
+    await cursorTo(p.x + (rnd() - 0.5) * 8, p.y + (rnd() - 0.5) * 5, dur);
+    await wait(0.1 + rnd() * 0.2); // a beat of hesitation before pressing
     pressFx();
-    await wait(0.06);
+    await wait(0.05 + rnd() * 0.05);
     if (then) then();
     else el.click();
   }
@@ -182,14 +248,20 @@
     });
     return [...el.querySelectorAll('.w')];
   }
-  const reveal = (ws, delay = 0, step = 70) =>
-    ws.forEach((w, i) =>
-      w.animate(
-        [{ opacity: 0, transform: 'translateY(34px)', filter: 'blur(14px)' }, { opacity: 1, transform: 'translateY(0)', filter: 'blur(0)' }],
-        { duration: 950, delay: delay + i * step, easing: WORD_EASE, fill: 'forwards' }
-      )
-    );
-  function caption(l1, l2, y = 842) {
+  // Four ways a line can arrive, so no two captions move the same way
+  const STYLES = {
+    rise: { from: { opacity: 0, transform: 'translateY(34px)', filter: 'blur(14px)' }, ms: 950, ease: WORD_EASE, step: 1 },
+    spring: { from: { opacity: 0, transform: 'translateY(64px) rotate(2.5deg) scale(0.9)', filter: 'blur(6px)' }, ms: 820, ease: 'cubic-bezier(.3, 1.8, .5, 1)', step: 0.8 },
+    scale: { from: { opacity: 0, transform: 'scale(1.35)', filter: 'blur(22px)' }, ms: 1000, ease: 'cubic-bezier(.2, .9, .1, 1)', step: 0.9 },
+    mask: { from: { opacity: 0, transform: 'translateY(105%)', filter: 'blur(0px)' }, ms: 900, ease: 'cubic-bezier(.19, 1, .22, 1)', step: 0.9, clip: true },
+  };
+  const reveal = (ws, delay = 0, step = 70, style = 'rise') => {
+    const st = STYLES[style];
+    ws.forEach((w, i) => {
+      w.animate([st.from, { opacity: 1, transform: 'none', filter: 'blur(0)' }], { duration: st.ms, delay: delay + i * step * st.step, easing: st.ease, fill: 'forwards' });
+    });
+  };
+  function caption(l1, l2, y = 842, style = 'rise') {
     const el = document.createElement('div');
     el.className = 'cap';
     el.style.top = y + 'px';
@@ -201,12 +273,18 @@
     titles.appendChild(el);
     const w1 = words(a, l1);
     const w2 = words(b, l2);
-    reveal(w1, 0, 75);
-    reveal(w2, 380, 28);
+    reveal(w1, 0, 75, style);
+    reveal(w2, 380, 28, 'rise');
+    if (style === 'mask') {
+      a.style.overflow = 'hidden';
+      a.style.paddingBottom = '0.16em';
+      a.style.marginBottom = '-0.16em';
+    }
     return {
-      out() {
+      out(how) {
+        const to = how === 'sink' ? { opacity: 0, transform: 'translateY(30px) scale(0.97)', filter: 'blur(12px)' } : how === 'shrink' ? { opacity: 0, transform: 'scale(0.85)', filter: 'blur(14px)' } : { opacity: 0, transform: 'translateY(-22px)', filter: 'blur(10px)' };
         [...w1, ...w2].forEach((w, i) =>
-          w.animate([{ opacity: 1, transform: 'none', filter: 'blur(0)' }, { opacity: 0, transform: 'translateY(-22px)', filter: 'blur(10px)' }], {
+          w.animate([{ opacity: 1, transform: 'none', filter: 'blur(0)' }, to], {
             duration: 520,
             delay: i * 18,
             easing: 'cubic-bezier(.5,0,.8,.4)',
@@ -262,13 +340,27 @@
   const paintTerm = (typing = '') => {
     termEl.innerHTML = termLines.slice(-7).join('\n') + (typing !== null ? `\n<span class="p">❯</span> ${typing}<span class="caret"></span>` : '');
   };
+  // typing rhythm of a person: bursts, slower after spaces and punctuation, the odd hesitation
+  let burst = 0;
+  function keyGap(ch, cps) {
+    let g = 1 / cps;
+    if (burst > 0) {
+      burst--;
+      g *= 0.62;
+    } else if (rnd() < 0.18) burst = 2 + Math.floor(rnd() * 4);
+    g *= 0.65 + rnd() * 0.85;
+    if (ch === ' ') g += 0.04 + rnd() * 0.06;
+    if (/[.,?!"]/.test(ch)) g += 0.08 + rnd() * 0.1;
+    if (rnd() < 0.05) g += 0.18 + rnd() * 0.22; // a thinking pause
+    return g;
+  }
   async function typeTerm(text, cps = 22) {
     let s = '';
     for (const ch of text) {
       s += ch;
       paintTerm(s);
-      S.tick(S.now() + 0.002, 0.018, 2300 + Math.random() * 500);
-      await wait(1 / cps + Math.random() * 0.025);
+      S.tick(S.now() + 0.002, 0.014 + rnd() * 0.01, 2200 + rnd() * 700);
+      await wait(keyGap(ch, cps));
     }
   }
 
@@ -476,6 +568,48 @@
     return rec;
   }
 
+  // ------------------------------------------------------------ speed ramps (render only)
+  // Each ramp is one full period of speed around 1 in OUTPUT time, so it is time-neutral: the film slows down (or
+  // speeds up) and then catches up, like a speed ramp in an edit. The hit lands inside the slow part.
+  const RAMPS = [
+    { a: 4.2, l: 1.9, amp: 0.6, sign: -1 }, // the logo lands in slow motion
+    { a: 26.9, l: 2.0, amp: 0.55, sign: -1 }, // "needs you"
+    { a: 36.2, l: 2.2, amp: 0.62, sign: -1 }, // the done burst hangs in the air
+    { a: 54.6, l: 2.0, amp: 0.5, sign: 1 }, // rushing into the focus timer
+    { a: 82.3, l: 2.6, amp: 0.55, sign: -1 }, // drifting off to sleep
+    { a: 85.8, l: 1.6, amp: 0.5, sign: -1 }, // waking up
+  ];
+  const speedAt = (T) => {
+    let s = 1;
+    for (const r of RAMPS) if (T >= r.a && T < r.a + r.l) s += r.sign * r.amp * Math.sin((2 * Math.PI * (T - r.a)) / r.l);
+    return s;
+  };
+  let tauTab = null;
+  // output time at which film time tau happens (identity outside a render)
+  function Tof(tau) {
+    if (!window.__rec.options.render) return tau;
+    if (!tauTab) {
+      tauTab = [0];
+      for (let k = 0; k < 7500; k++) tauTab.push(tauTab[k] + speedAt(k / 60) / 60);
+    }
+    let lo = 0;
+    let hi = tauTab.length - 1;
+    while (hi - lo > 1) {
+      const m = (lo + hi) >> 1;
+      if (tauTab[m] <= tau) lo = m;
+      else hi = m;
+    }
+    const f = (tau - tauTab[lo]) / Math.max(1e-9, tauTab[hi] - tauTab[lo]);
+    return (lo + f) / 60;
+  }
+  const veil = $('#veil');
+  const setVeil = (to, dur, ease = E.inOut) => {
+    const from = parseFloat(veil.style.opacity || 0);
+    return tween(dur, ease, (p) => (veil.style.opacity = from + (to - from) * p));
+  };
+  // a slow push while nothing else moves, so a held shot is never dead
+  const push = (k, dur) => camTo({ s: cam.s * (1 + k) }, dur, E.drift);
+
   // ------------------------------------------------------------ the film
   async function film() {
     // ---------- before the first frame
@@ -495,10 +629,10 @@
 
     const rec = await startRecording();
     const RENDER = !!window.__rec.options.render;
-    // in a render the film starts on a frame boundary and audio time is film time
+    // in a render the film starts on a frame boundary and audio time is output time
     t0 = RENDER ? Math.ceil((performance.now() + 350) / window.__vtime.FRAME) * window.__vtime.FRAME : performance.now() + 350;
     const T0a = RENDER ? 0 : S.now() + 0.35;
-    S.scheduleScore(T0a, 102);
+    S.scheduleScore(T0a, 106);
     window.__rec.started();
     const loop = () => {
       runTweens();
@@ -507,20 +641,21 @@
       requestAnimationFrame(loop);
     };
     loop();
-    const at = (t) => T0a + t; // audio time of a film time
+    const at = (t) => (RENDER ? Tof(t) : T0a + t); // audio time of a film time
 
     // ================= A. COLD OPEN  0 - 10
     S.riser(at(2.2), 2.8, 0.2);
     S.impact(at(5.0), 0.6);
     S.whoosh(at(8.6), 0.9, false, 0.1);
-    setFade(0, 1.7, E.out);
-    camTo({ x: 960, y: 15, s: 7.6 }, 3.2, E.lin);
+    setFade(0, 1.9, E.outExpo);
+    camTo({ x: 960, y: 15, s: 7.9 }, 2.95, E.drift); // a slow, breathing push toward the eyes
     await until(1.7);
     const eyebrow = mk('eyebrow', 'Introducing', 735);
     eyebrow.animate([{ opacity: 0, letterSpacing: '1.1em', filter: 'blur(10px)' }, { opacity: 1, letterSpacing: '0.5em', filter: 'blur(0)' }], { duration: 1500, easing: WORD_EASE, fill: 'forwards' });
-    await until(3.1);
-    camTo({ x: 960, y: 330, s: 1.5 }, 1.9, E.cine);
-    fadeOut(eyebrow, { y: -14, ms: 600, delay: 900 });
+    await until(3.05);
+    await windUp(0.04, 0.3); // a breath in...
+    camTo({ x: 960, y: 330, s: 1.5 }, 1.55, E.whip); // ...and the pull-back, fast in the middle
+    fadeOut(eyebrow, { y: -14, ms: 600, delay: 500 });
     await until(4.98);
     const face = window.Mochi.create({ mood: 'wink', size: 210, clickable: false });
     const logo = mk('logo', '', 470);
@@ -531,18 +666,19 @@
     word.textContent = 'Mochi';
     logo.append(faceBox, word);
     logo.style.opacity = 1;
-    logo.animate([{ opacity: 0, transform: 'scale(1.18)', filter: 'blur(22px)' }, { opacity: 1, transform: 'scale(1)', filter: 'blur(0)' }], { duration: 1300, easing: WORD_EASE, fill: 'forwards' });
+    logo.animate([{ opacity: 0, transform: 'scale(1.22)', filter: 'blur(26px)' }, { opacity: 1, transform: 'scale(1)', filter: 'blur(0)' }], { duration: 1500, easing: 'cubic-bezier(.2, .9, .1, 1)', fill: 'forwards' });
+    faceBox.animate([{ transform: 'translateY(40px) scale(0.7) rotate(-14deg)' }, { transform: 'translateY(-8px) scale(1.06) rotate(3deg)', offset: 0.55 }, { transform: 'none' }], { duration: 1400, delay: 150, easing: 'cubic-bezier(.3, 1.2, .5, 1)', fill: 'backwards' });
     flash(0.45, 700);
     kick(18, 0.9);
     const tag = mk('tag', 'The little friend living in your notch.', 760);
-    fadeIn(tag, { delay: 650, ms: 1200 });
-    await until(8.55);
+    fadeIn(tag, { delay: 700, ms: 1300 });
+    await until(8.5);
     fadeOut(logo, { y: -40, ms: 800 });
     fadeOut(tag, { y: -30, ms: 700 });
-    await until(8.9);
+    await until(8.85);
     ide.classList.add('dim');
     emit('music', { enabled: true, status: 'none' });
-    camTo({ x: 960, y: 200, s: 2.35 }, 1.7, E.cine);
+    camTo({ x: 960, y: 200, s: 2.35 }, 1.9, E.drift);
 
     // ================= B. HOME  10 - 20
     await until(9.6);
@@ -551,61 +687,66 @@
     await until(10.5);
     cursorShow(true);
     cur.x = 1450; cur.y = 190; placeCursor();
-    cursorTo(960, 22, 1.0, E.glide);
+    cursorTo(960, 22, 1.0);
     await until(11.55);
     S.whoosh(S.now(), 0.55, true, 0.07);
     emit('hover', true); // the notch springs open
     await until(12.1);
-    cursorTo(1010, 215, 1.2, E.out);
-    let cp = caption('Your whole day, one hover away.', 'Claude, music, focus and notes. Right in the notch.');
+    cursorTo(1010, 215, 1.2);
+    let cp = caption('Your whole day, one hover away.', 'Claude, music, focus and notes. Right in the notch.', 842, 'mask');
     await until(13.9);
+    push(0.05, 5.6);
     const tiles = [...document.querySelectorAll('.home .tile')].filter((t) => t.offsetParent);
     const strip = vis('.notes-strip');
+    const beats = [13.9, 15.15, 16.6, 17.8];
     for (const [i, el] of [tiles[0], tiles[1], tiles[2], strip].entries()) {
       if (!el) continue;
       highlight(el, 5);
-      await until(13.9 + (i + 1) * 1.35);
+      await until(beats[i] + (i === 3 ? 1.2 : i === 0 ? 1.25 : 1.45));
     }
     unhighlight();
     await until(19.0);
-    cp.out();
-    cursorTo(1500, 360, 0.9, E.soft);
+    cp.out('sink');
+    cursorTo(1500, 360, 0.9);
     await until(19.4);
     emit('hover', false);
     cursorShow(false, 0.6);
 
     // ================= C. CLAUDE AT WORK  20 - 42
-    await until(19.9);
-    camTo({ x: 960, y: 420, s: 1.12 }, 1.9, E.cine);
+    await until(19.8);
+    camTo({ x: 960, y: 420, s: 1.12 }, 2.1, E.drift);
     ide.classList.remove('dim');
     S.whoosh(S.now(), 0.9, true, 0.08);
     await until(21.0);
-    const c1 = caption('Give Claude a task.', 'Then get on with your day.', 870);
-    await typeTerm('claude "add VAT to checkout and run the tests"', 26);
-    await until(22.6);
+    const c1 = caption('Give Claude a task.', 'Then get on with your day.', 870, 'rise');
+    await typeTerm('claude "add VAT to checkout and run the tests"', 24);
+    await until(22.7);
     termLines.push('<span class="p">❯</span> claude "add VAT to checkout and run the tests"', '<span class="c">● Reading files…</span>');
     paintTerm(null);
-    c1.out();
+    c1.out('sink');
     setSession({ state: 'working', startedAt: Date.now(), finishedAt: null, step: 0, diff: null, testCommand: '', testResult: '', lastMessage: '', jobsToday: 4 }, 'working');
-    camTo({ x: 960, y: 15, s: 7.2 }, 1.7, E.cine); // match cut: the whole desktop collapses into Mochi's eyes
+    windUp(0.05, 0.22);
+    await wait(0.2);
+    camTo({ x: 960, y: 15, s: 7.2 }, 1.25, E.whip); // match cut: the whole desktop collapses into Mochi's eyes
     S.whoosh(S.now(), 1.2, true, 0.1);
-    await until(23.6);
-    const c2 = caption('Eyes on every task.', 'Mochi watches Claude work, so you don\'t have to.', 842);
-    await until(25.4);
+    await until(24.0);
+    const c2 = caption('Eyes on every task.', 'Mochi watches Claude work, so you don\'t have to.', 842, 'scale');
+    push(0.06, 3.4);
+    await until(25.6);
     termLines.push('<span class="c">● Editing checkout.ts</span>');
     paintTerm(null);
     paintCode(codeAfter);
     setSession({ step: 1, diff: DIFF }, 'working');
     await until(27.0);
-    c2.out();
+    c2.out('shrink');
     // needs you
     await until(27.4);
-    kick(8, 0.5);
+    kick(9, 0.55);
     setSession({ approval: { id: 1, requestedAt: Date.now(), toolName: 'Bash', command: 'npm test', diff: null }, needsText: 'npm test', pendingCount: 1 }, 'needs');
     emit('chime', 'needs');
-    camTo({ x: 960, y: 184, s: 2.55 }, 1.5, E.cine); // pull back as the panel springs open
+    camTo({ x: 960, y: 184, s: 2.55 }, 1.5, E.spring); // snaps back with a little bounce as the panel springs open
     await until(29.0);
-    const c3 = caption('Approve from the notch.', 'Allow or deny without leaving your flow.', 856);
+    const c3 = caption('Approve from the notch.', 'Allow or deny without leaving your flow.', 856, 'spring');
     await until(30.0);
     cursorShow(true);
     cur.x = 1560; cur.y = 220; placeCursor();
@@ -621,8 +762,9 @@
     paintTerm(null);
     setSession({ approval: null, needsText: '', pendingCount: 0, step: 2, testCommand: 'npm test' }, 'working');
     await until(32.2);
-    cursorTo(1200, 330, 1.0, E.out);
-    c3.out();
+    cursorTo(1200, 330, 1.0);
+    c3.out('sink');
+    push(0.04, 4.5);
     await until(34.4);
     setSession({ step: 3, testResult: '48 passed' }, 'working');
     await until(36.9);
@@ -631,11 +773,12 @@
     setSession({ state: 'done', step: 4, finishedAt: Date.now(), testResult: '48 passed', lastMessage: 'Done! VAT is now added at checkout. All 48 tests pass.', jobsToday: 5 }, 'done');
     emit('chime', 'done');
     flash(0.22, 600);
-    await until(37.7);
-    const c4 = caption('Know the second it\'s done.', 'A soft chime. A tiny celebration.', 856);
+    kick(6, 0.5);
+    await until(38.0);
+    const c4 = caption('Know the second it\'s done.', 'A soft chime. A tiny celebration.', 856, 'spring');
     await until(41.2);
-    c4.out();
-    cursorTo(1500, 380, 0.9, E.soft);
+    c4.out('sink');
+    cursorTo(1500, 380, 0.9);
     cursorShow(false, 0.7);
     await until(41.6);
     setSession({}, 'idle');
@@ -643,16 +786,16 @@
 
     // ================= D. MUSIC  42 - 51
     await until(42.1);
-    camTo({ x: 990, y: 38, s: 4.6 }, 1.7, E.cine);
+    camTo({ x: 990, y: 38, s: 4.6 }, 1.5, E.outExpo); // arrives fast and settles slowly
     ide.classList.add('dim');
     S.whoosh(S.now(), 0.9, true, 0.08);
     await until(43.0);
-    const c5 = caption('Your music. Never in the way.', 'Album art beside the notch. Mochi dances along.', 852);
+    const c5 = caption('Your music. Never in the way.', 'Album art beside the notch. Mochi dances along.', 852, 'mask');
     await until(45.0);
-    camTo({ x: 960, y: 188, s: 2.5 }, 1.4, E.cine);
+    camTo({ x: 960, y: 188, s: 2.5 }, 1.5, E.spring);
     cursorShow(true);
     cur.x = 1400; cur.y = 120; placeCursor();
-    cursorTo(960, 22, 0.9, E.glide);
+    cursorTo(960, 22, 0.9);
     await until(45.7);
     emit('hover', true);
     await until(46.4);
@@ -662,21 +805,21 @@
     await until(49.4);
     await pointAndClick(vis('[data-r="next"]'), { dur: 0.7 });
     await until(50.6);
-    c5.out();
+    c5.out('sink');
 
     // ================= E. FOCUS  51 - 62
     await until(51.0);
     S.whoosh(S.now(), 0.7, true, 0.08);
     await pointAndClick(navItem('focus'), { dur: 0.8 });
     await until(52.0);
-    const c6 = caption('Pomodoro, built in.', '25 minutes on, 5 off. A chime at every switch.', 856);
+    const c6 = caption('Pomodoro, built in.', '25 minutes on, 5 off. A chime at every switch.', 856, 'rise');
     await until(53.2);
     await pointAndClick(vis('[data-r="go"]'), { dur: 0.9 });
     await until(54.1);
-    cursorTo(1500, 300, 0.8, E.soft);
+    cursorTo(1500, 300, 0.8);
     cursorShow(false, 0.6);
     emit('hover', false);
-    camTo({ x: 960, y: 18, s: 5.4 }, 1.6, E.cine);
+    camTo({ x: 960, y: 18, s: 5.4 }, 2.0, E.inOut);
     await until(55.0);
     setRate(300); // 25 minutes in five seconds
     const fast = () => {
@@ -687,104 +830,116 @@
     };
     fast();
     await until(56.0);
-    c6.out();
-    const c7 = caption('Chimes at every switch.', 'Focus, break, focus again.', 856);
+    c6.out('shrink');
+    const c7 = caption('Chimes at every switch.', 'Focus, break, focus again.', 856, 'scale');
     await until(60.6);
     setRate(1);
     await until(61.0);
-    c7.out();
+    c7.out('sink');
+    await until(61.5);
+    if (window.Focus.read().running) window.Focus.toggle(); // reset: the timer clears, the notch relaxes
 
     // ================= F. NOTES  62 - 70
-    await until(61.6);
-    camTo({ x: 960, y: 196, s: 2.4 }, 1.3, E.cine);
+    await until(61.9);
+    camTo({ x: 960, y: 196, s: 2.4 }, 1.4, E.spring);
     cursorShow(true);
     cur.x = 1400; cur.y = 100; placeCursor();
-    cursorTo(960, 22, 0.8, E.glide);
-    await until(62.2);
+    cursorTo(960, 22, 0.8);
+    await until(62.4);
     emit('hover', true);
-    await until(62.9);
+    await until(63.0);
     await pointAndClick(navItem('notes'), { dur: 0.7 });
-    await until(63.8);
-    const c8 = caption('Never lose a task.', 'A to-do list and a quick note, saved as a plain file.', 852);
+    await until(63.9);
+    const c8 = caption('Never lose a task.', 'A to-do list and a quick note, saved as a plain file.', 852, 'spring');
     const input = vis('[data-r="add"]');
     await pointAndClick(input, { dur: 0.8, then: () => input.focus() });
     const typeInto = async (el, text, cps) => {
       for (const ch of text) {
         el.value += ch;
         el.dispatchEvent(new Event('input', { bubbles: true }));
-        S.tick(S.now() + 0.002, 0.02, 2200 + Math.random() * 500);
-        await wait(1 / cps + Math.random() * 0.02);
+        S.tick(S.now() + 0.002, 0.016 + rnd() * 0.01, 2100 + rnd() * 700);
+        await wait(keyGap(ch, cps));
       }
     };
     const enter = () => el_enter(input);
     function el_enter(el) {
       el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     }
-    await typeInto(input, 'Ship the new checkout', 17);
-    await wait(0.25);
+    await typeInto(input, 'Ship the new checkout', 16);
+    await wait(0.22 + rnd() * 0.15);
     enter();
-    await wait(0.45);
-    await typeInto(input, 'Reply to Sam', 17);
-    await wait(0.2);
+    await wait(0.45 + rnd() * 0.25);
+    await typeInto(input, 'Reply to Sam', 16);
+    await wait(0.18 + rnd() * 0.15);
     enter();
-    await until(67.4);
+    await until(67.6);
     const box = [...document.querySelectorAll('.nt-box')].find((b) => b.offsetParent && !b.classList.contains('x') && b.getAttribute('aria-checked') === 'false');
     if (box) await pointAndClick(box, { dur: 0.7 });
-    await until(68.4);
-    c8.out();
+    await until(68.6);
+    c8.out('sink');
     await pointAndClick(navItem('home'), { dur: 0.7 });
-    await until(69.3);
+    await until(69.4);
     const strip2 = vis('.notes-strip');
     if (strip2) highlight(strip2, 5);
-    await until(70.2);
+    await until(70.3);
     unhighlight();
 
     // ================= G. CHAT  70 - 81
     S.whoosh(S.now(), 0.7, true, 0.08);
     await pointAndClick(navItem('chat'), { dur: 0.8 });
-    camTo({ x: 960, y: 212, s: 2.22 }, 1.2, E.cine);
-    await until(71.3);
-    const c9 = caption('Ask Claude anything.', 'Even about what\'s on your screen.', 886);
-    await until(72.0);
+    camTo({ x: 960, y: 212, s: 2.22 }, 1.5, E.drift);
+    await until(71.4);
+    const c9 = caption('Ask Claude anything.', 'Even about what\'s on your screen.', 886, 'mask');
+    await until(72.1);
     await pointAndClick(vis('[data-r="cam"]'), { dur: 0.9 });
-    await until(73.6);
+    await until(73.7);
     const ta = vis('[data-r="ta"]');
     await pointAndClick(ta, { dur: 0.7, then: () => ta.focus() });
-    await typeInto(ta, 'why is this crashing?', 15);
-    await wait(0.3);
+    await typeInto(ta, 'why is this crashing?', 14);
+    await wait(0.3 + rnd() * 0.2);
     pressFx();
     ta.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-    await until(79.6);
-    c9.out();
-    cursorTo(1500, 380, 0.9, E.soft);
+    push(0.045, 5.5);
+    await until(79.7);
+    c9.out('sink');
+    cursorTo(1500, 380, 0.9);
     cursorShow(false, 0.7);
+    await until(80.1);
+    ta.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); // Esc lets go of the text box, which would keep the notch open
     await until(80.4);
     emit('hover', false);
+    emit('music', { enabled: true, status: 'none' }); // the music stops, the bubble tucks away: the room goes quiet
 
-    // ================= H. PERSONALITY  81 - 88
+    // ================= H. A NAP  81 - 90
     await until(80.9);
-    camTo({ x: 960, y: 20, s: 5.6 }, 1.5, E.cine);
+    camTo({ x: 960, y: 17, s: 7.0 }, 2.4, E.drift);
     ide.classList.add('dim');
-    S.whoosh(S.now(), 0.9, true, 0.08);
-    await until(81.9);
-    const c10 = caption('He naps when you\'re away.', 'And wakes up when you\'re back.', 852);
-    emit('personality', 'night');
-    await until(82.6);
-    emit('personality', 'nap');
-    await until(85.0);
-    emit('personality', 'wake');
+    S.whoosh(S.now(), 0.9, true, 0.07);
+    await until(82.0);
+    const c10 = caption('He naps when you\'re away.', 'And wakes up the moment you\'re back.', 852, 'scale');
+    emit('personality', 'night'); // sleepy, droopy eyes
+    await until(82.9);
+    emit('personality', 'nap'); // the eyes slide shut, a little "z" drifts up
+    S.lullaby(S.now(), false);
+    setVeil(0.85, 2.2, E.drift); // the room dims
+    await until(86.0);
+    emit('personality', 'wake'); // ...and the wake-up blink
     emit('personality', 'normal');
-    c10.out();
-    await until(85.7);
-    camTo({ x: 960, y: 174, s: 2.7 }, 1.3, E.cine);
+    S.lullaby(S.now(), true);
+    setVeil(0, 1.1, E.outExpo);
+    kick(5, 0.5);
+    camTo({ s: 7.55 }, 0.5, E.spring); // a little start
+    c10.out('shrink');
+    await until(87.2);
+    camTo({ x: 960, y: 174, s: 2.7 }, 1.4, E.spring);
     emit('break', { minutes: 52 });
     emit('chime', 'break');
-    await until(86.6);
-    const c11 = caption('He\'ll remind you to rest your eyes.', '', 856);
-    await until(88.0);
+    await until(88.2);
+    const c11 = caption('He\'ll remind you to rest your eyes.', '', 856, 'mask');
+    await until(90.0);
 
-    // ================= I. THE END  88 - 100
-    c11.out();
+    // ================= I. THE END  90 - 102.6
+    c11.out('sink');
     flash(0.55, 900);
     kick(16, 0.9);
     await setFade(1, 0.35, E.lin);
@@ -792,8 +947,8 @@
     document.querySelectorAll('.brk-skip').forEach((b) => b.click());
     camSet({ x: 960, y: 330, s: 1.5 });
     emit('music', { enabled: true, status: 'none' });
-    await until(88.5);
-    setFade(0, 1.4, E.out);
+    await until(90.5);
+    setFade(0, 1.5, E.outExpo);
     face.el.parentNode && face.el.parentNode.remove();
     const face2 = window.Mochi.create({ mood: 'happy', size: 210, clickable: false });
     const logo2 = mk('logo', '', 470);
@@ -804,21 +959,22 @@
     word2.textContent = 'Mochi';
     logo2.append(fb, word2);
     logo2.style.opacity = 1;
-    logo2.animate([{ opacity: 0, transform: 'scale(1.1)', filter: 'blur(20px)' }, { opacity: 1, transform: 'scale(1)', filter: 'blur(0)' }], { duration: 1500, easing: WORD_EASE, fill: 'forwards' });
-    camTo({ x: 960, y: 300, s: 1.42 }, 9, E.lin);
-    await until(90.0);
+    logo2.animate([{ opacity: 0, transform: 'scale(1.12)', filter: 'blur(20px)' }, { opacity: 1, transform: 'scale(1)', filter: 'blur(0)' }], { duration: 1600, easing: 'cubic-bezier(.2, .9, .1, 1)', fill: 'forwards' });
+    fb.animate([{ transform: 'translateY(34px) scale(0.75) rotate(-10deg)' }, { transform: 'translateY(-6px) scale(1.05) rotate(2deg)', offset: 0.6 }, { transform: 'none' }], { duration: 1300, delay: 200, easing: 'cubic-bezier(.3, 1.2, .5, 1)', fill: 'backwards' });
+    camTo({ x: 960, y: 300, s: 1.42 }, 10, E.drift);
+    await until(92.0);
     const tag2 = mk('tag', 'Your Claude Code, living in the notch.', 735);
-    fadeIn(tag2, { ms: 1300 });
-    await until(92.2);
+    fadeIn(tag2, { ms: 1400 });
+    await until(94.2);
     const fine = mk('fine', 'For Windows 10 and 11  ·  Runs on your PC  ·  No account', 836);
     fadeIn(fine, { ms: 1200, y: 14 });
-    await until(97.4);
+    await until(99.4);
     fadeOut(logo2, { y: -20, ms: 1600 });
     fadeOut(tag2, { y: -16, ms: 1500 });
     fadeOut(fine, { y: -10, ms: 1400 });
-    await until(98.6);
-    await setFade(1, 1.6, E.inOut);
     await until(100.6);
+    await setFade(1, 1.7, E.inOut);
+    await until(102.6);
     if (window.__rec.options.render) {
       window.__film.finished = true; // the renderer takes it from here
       return;
@@ -829,8 +985,10 @@
 
   window.__film = {
     finished: false,
+    T: 0,
     t0: () => t0,
     now: () => now(),
+    speed: (T) => speedAt(T),
     run: () =>
       film().catch((e) => {
         LOG('DIRECTOR ERROR ' + (e && e.stack ? e.stack : e));
