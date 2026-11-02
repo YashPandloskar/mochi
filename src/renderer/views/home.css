@@ -83,8 +83,11 @@ button.tile { cursor: pointer; }
   right: 10px;
   width: 30px;
   height: 30px;
+  padding: 0;
+  border: 0;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.14) center / cover no-repeat;
+  cursor: pointer;
 }
 .t-bottom { margin-top: auto; min-width: 0; }
 .tile-music.has-button .t-bottom { padding-right: 34px; } /* room for the pause button while a track is loaded */
@@ -150,3 +153,36 @@ button.tile { cursor: pointer; }
 }
 .nav-item.active { background: var(--nav-active); color: var(--text); padding: 0 10px; }
 .nav-item b { font-size: 11px; font-weight: 600; }
+
+/* music controls */
+.pill {
+  margin-top: 5px;
+  height: 20px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--text);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pill[hidden], .t-artist[hidden], .t-ctl[hidden] { display: none; }
+.pill:hover { background: rgba(255, 255, 255, 0.3); }
+.t-ctl { position: absolute; right: 44px; bottom: 11px; display: flex; gap: 4px; opacity: 0; transition: opacity 0.15s linear; }
+.tile-music:hover .t-ctl { opacity: 1; }
+.t-mini {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20, 0, 6, 0.55);
+  color: var(--text);
+  cursor: pointer;
+}
+.t-mini:hover { background: rgba(20, 0, 6, 0.8); }

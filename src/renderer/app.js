@@ -253,6 +253,7 @@
     needs.update(session);
   });
   window.mochi.onUsage((usage) => home.update({ usage }));
+  window.mochi.onMusic((music) => home.update({ music }));
 
   content.style.visibility = 'hidden';
   applyGeometry();

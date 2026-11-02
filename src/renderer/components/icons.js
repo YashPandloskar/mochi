@@ -15,6 +15,8 @@
     doc: wrap('<path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>'),
     play: wrap('<path d="M8 5.5v13l11-6.5z"/>', 'currentColor'),
     stop: wrap('<rect x="6.5" y="6.5" width="11" height="11" rx="2"/>', 'currentColor'),
+    prev: wrap('<path d="M18 5.5v13L8.5 12z"/><path d="M6 5.5v13"/>', 'currentColor'),
+    next: wrap('<path d="M6 5.5v13L15.5 12z"/><path d="M18 5.5v13"/>', 'currentColor'),
     pause: wrap('<rect x="6.5" y="5" width="3.6" height="14" rx="1"/><rect x="13.9" y="5" width="3.6" height="14" rx="1"/>', 'currentColor'),
   };
 })();

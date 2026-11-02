@@ -8,7 +8,7 @@ const STATES = [
   ['Done', 'done'],
 ];
 
-function create({ onPreview, showUsage, onToggleUsage }) {
+function create({ onPreview, showUsage, onToggleUsage, showMusic, onToggleMusic }) {
   const icon = nativeImage.createFromPath(path.join(__dirname, '..', '..', 'assets', 'tray.png'));
   const tray = new Tray(icon);
   tray.setToolTip('mochi');
@@ -23,6 +23,15 @@ function create({ onPreview, showUsage, onToggleUsage }) {
           click: (item) => {
             showUsage = item.checked;
             onToggleUsage(showUsage);
+          },
+        },
+        {
+          label: 'Music module (Apple Music)',
+          type: 'checkbox',
+          checked: showMusic,
+          click: (item) => {
+            showMusic = item.checked;
+            onToggleMusic(showMusic);
           },
         },
         { type: 'separator' },

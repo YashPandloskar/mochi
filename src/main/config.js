@@ -8,6 +8,7 @@ const defaults = {
   port: 47900,
   token: null,
   showUsage: true, // "Show usage on Claude tile"
+  music: true, // Music module (Apple Music)
   // the user's own statusLine, saved by the hook installer so it can be chained and restored
   statusLineOriginal: null,
   jobs: { date: '', count: 0 },

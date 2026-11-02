@@ -6,6 +6,7 @@ const tray = require('./tray');
 const server = require('./server');
 const SessionState = require('./session-state');
 const Usage = require('./usage');
+const Music = require('./music');
 
 app.setName('mochi');
 // A second copy must do nothing at all: no window, no server, no config writes.
@@ -29,6 +30,15 @@ app.whenReady().then(() => {
   usage.on('change', (u) => windowMgr.send('usage', u));
   usage.start();
 
+  const music = new Music({ enabled: cfg.music });
+  music.on('change', (m) => windowMgr.send('music', m));
+  ipcMain.on('music:command', (_e, cmd) => (cmd === 'open' ? music.open() : music.command(cmd)));
+  music.start();
+  app.on('before-quit', () => {
+    music.stop();
+    usage.stop();
+  });
+
   const win = windowMgr.create(cfg);
   // Allow / Deny buttons in the notch. id -1 is the tray "Preview state" sample: just close it.
   ipcMain.on('approval:resolve', (_e, { id, decision }) => {
@@ -43,6 +53,11 @@ app.whenReady().then(() => {
       config.update({ showUsage: on });
       usage.setEnabled(on);
     },
+    showMusic: cfg.music,
+    onToggleMusic: (on) => {
+      config.update({ music: on });
+      music.setEnabled(on);
+    },
     onPreview: (s) => state.preview(s),
   });
 
@@ -56,6 +71,7 @@ app.whenReady().then(() => {
     windowMgr.send('state', snap.state);
     windowMgr.send('session', snap);
     if (usage.current) windowMgr.send('usage', usage.current);
+    windowMgr.send('music', music.current);
   });
 
   // MOCHI_PORT lets a test copy run without receiving the real hook events

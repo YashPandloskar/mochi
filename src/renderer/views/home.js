@@ -44,12 +44,17 @@
         </div>
         <div class="tile tile-music">
           <div class="t-label">Music <span class="eq" data-r="eq"><i></i><i></i><i></i></span></div>
-          <div class="t-art" data-r="art"></div>
+          <button class="t-art" data-r="art" type="button" title="Open Apple Music"></button>
           <div class="t-bottom">
             <div class="t-title" data-r="title">Nothing playing</div>
             <div class="t-artist" data-r="artist">Apple Music</div>
+            <button class="pill" data-r="open" type="button" hidden>Open Apple Music</button>
           </div>
-          <button class="t-round t-playpause" data-r="playpause" hidden>${Icons.pause(14)}</button>
+          <div class="t-ctl" data-r="ctl" hidden>
+            <button class="t-mini" data-r="prev" type="button" title="Previous">${Icons.prev(12)}</button>
+            <button class="t-mini" data-r="next" type="button" title="Next">${Icons.next(12)}</button>
+          </div>
+          <button class="t-round t-playpause" data-r="playpause" type="button" hidden>${Icons.pause(14)}</button>
         </div>
         <button class="tile tile-focus" data-r="focus" type="button">
           <div class="t-label">Focus</div>
@@ -90,6 +95,37 @@
 
     let session = null;
     let usage = null;
+
+    // ---------- Music tile (Apple Music) ----------
+    const tileMusic = el.querySelector('.tile-music');
+    const send = (cmd) => window.mochi.musicCommand(cmd);
+    r.playpause.addEventListener('click', () => send('playpause'));
+    r.prev.addEventListener('click', () => send('prev'));
+    r.next.addEventListener('click', () => send('next'));
+    r.open.addEventListener('click', () => send('open'));
+    r.art.addEventListener('click', () => send('open'));
+
+    function renderMusic(m) {
+      const live = m && m.enabled && m.status && m.status !== 'none';
+      const playing = !!(m && m.status === 'playing');
+      r.eq.classList.toggle('playing', playing);
+      tileMusic.classList.toggle('has-button', !!live);
+      r.playpause.hidden = !live;
+      r.ctl.hidden = !live;
+      r.open.hidden = !(m && m.enabled && !live);
+      r.artist.hidden = !live && !!(m && m.enabled);
+      if (live) {
+        r.title.textContent = m.title || 'Unknown track';
+        r.artist.textContent = m.artist || '';
+        r.playpause.innerHTML = playing ? Icons.pause(14) : Icons.play(14);
+        r.playpause.title = playing ? 'Pause' : 'Play';
+        r.art.style.backgroundImage = m.art ? `url("${m.art}")` : '';
+      } else {
+        r.title.textContent = m && m.enabled === false ? 'Music off' : 'Nothing playing';
+        r.artist.textContent = m && m.enabled === false ? 'Turn it on from the tray' : 'Apple Music';
+        r.art.style.backgroundImage = '';
+      }
+    }
 
     function renderUsage() {
       const box = r.usage;
@@ -164,6 +200,7 @@
       update(next) {
         if (next.session) session = next.session;
         if (next.usage) usage = next.usage;
+        if (next.music) renderMusic(next.music);
         renderUsage();
         tick();
       },

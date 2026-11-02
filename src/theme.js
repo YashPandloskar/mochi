@@ -111,6 +111,13 @@ const theme = {
     turnGreenAfterSeconds: 4.5,
   },
 
+  // Music module: Apple Music desktop app only. Every other media session is ignored.
+  music: {
+    appMatch: 'AppleMusic', // matched against each media session's app id
+    appId: 'AppleInc.AppleMusicWin_nzyj5cx40ttqa!App', // used by "Open Apple Music"
+    restartSeconds: 5, // helper restart delay if it dies
+  },
+
   // Needs-approval panel.
   needs: {
     chipBackground: 'rgba(255, 208, 122, 0.16)',
