@@ -1,4 +1,4 @@
-﻿# mochi
+# mochi
 
 A small notch fused to the top-centre edge of your primary display (Windows 10/11). It shows what
 Claude Code is doing, lets you allow or deny actions, and houses a mascot called Mochi.
@@ -64,7 +64,7 @@ The pill at the bottom of the panel switches the view. Click an icon:
 | Music | A bigger Apple Music player: art, title, artist, progress with times, previous / play-pause / next. The panel takes the album's colour |
 | Notes | A to-do list and a quick note, kept in a Markdown file (see "Notes and to-do" below) |
 | Chat | Day-to-day questions to Claude: plan something, explain something, draft a message (see below) |
-| Focus | A Pomodoro timer with a progress ring: **25 minutes of focus, then a 5 minute break, then focus again**, until you press Reset. **− / +** change the focus length (5 to 120, steps of 5) and the break length (1 to 30). **Cycle** turns the repeating off for a single timer. Each finished focus period counts as a session; today's count is shown on the tile and the tab and is remembered for the day. A soft chime and a toast mark every switch (a falling tune for "break", a rising one for "back to focus"). The collapsed notch widens with a ring and the time (green during a break). Lengths are locked while counting. Defaults: `home.focusMinutes`, `home.breakMinutes`, `home.cycle` in `src/theme.js` |
+| Focus | A Pomodoro timer with a progress ring: **25 minutes of focus, then a 5 minute break, then focus again**, until you press Reset. **- / +** change the focus length (5 to 120, steps of 5) and the break length (1 to 30). **Cycle** turns the repeating off for a single timer. Each finished focus period counts as a session; today's count is shown on the tile and the tab and is remembered for the day. A soft chime and a toast mark every switch (a falling tune for "break", a rising one for "back to focus"). The collapsed notch widens with a ring and the time (green during a break). Lengths are locked while counting. Defaults: `home.focusMinutes`, `home.breakMinutes`, `home.cycle` in `src/theme.js` |
 
 The panel opens on Home when idle and on Claude while a job runs or has just finished. Needs-you always
 takes over (it has no nav bar). The nav bar can be taken off the Working and Done panels with
@@ -72,9 +72,9 @@ takes over (it has no nav bar). The nav bar can be taken off the Working and Don
 
 ## Notes and to-do
 
-The **Notes** tab (checklist icon) has a to-do list on the left and a quick note on the right. A strip under the Home tiles shows how far you are ("To-do · 2 of 5") and your next task; click it to open the tab.
+The **Notes** tab (checklist icon) has a to-do list on the left and a quick note on the right. A strip under the Home tiles shows how far you are ("To-do � 2 of 5") and your next task; click it to open the tab.
 
-- **Tasks:** type in "Add a task…" and press Enter. Click the box to tick a task, double-click its text to rename it (an emptied task is deleted), use the ✕ to delete, and **Clear done** removes the ticked ones.
+- **Tasks:** type in "Add a task�" and press Enter. Click the box to tick a task, double-click its text to rename it (an emptied task is deleted), use the ? to delete, and **Clear done** removes the ticked ones.
 - **Nothing typed is lost:** a task you typed but did not confirm with Enter is added as soon as you click away, switch tab or the notch closes. **Esc** cancels instead. Every change is written to the file immediately; if Windows refuses a write, mochi retries and shows a red warning in the Notes tab until it succeeds.
 - **Quick note:** just type; it is saved a moment after you stop.
 - **It is a plain file:** `%USERPROFILE%\.mochi\notes.md`. **Open file** opens it in your editor, and changes made there appear in the notch within a second. The format is simple:
@@ -103,7 +103,7 @@ The **Chat** tab (message icon) is a plain conversation with Claude for everyday
 - **Plain chat only:** tools are off (it cannot read files or run commands), and your personal Claude Code settings, plugins and hooks are not loaded, so a chat never shows up as a Working / Done job and never counts toward "jobs today". It runs in an empty temporary folder.
 - **Keyboard focus:** the notch normally never takes keyboard focus. It takes it only when you click the input, and gives it back when you press **Esc**, click another window, or the notch closes. While you type or an answer arrives, the panel stays open.
 - **Not signed in?** Run `claude` once in a terminal and sign in.
-- **Explain my screen:** the camera button next to Send takes a screenshot of the display the notch is on. A thumbnail appears above the input with an ✕ to remove it; then type your question (or just press Enter to ask "Explain what is on my screen.") and it is sent together with the picture. The notch's own window is left out of the picture. A screenshot is taken **only when you press the button**, is kept in memory only until you send or remove it, and is never saved by mochi (Claude Code keeps its own record of the conversation, as it does for any chat). The picture is scaled to at most 1600 pixels wide. Apps that block screenshots come out black, and mochi tells you. The "Explain my screen" suggestion does both steps for you.
+- **Explain my screen:** the camera button next to Send takes a screenshot of the display the notch is on. A thumbnail appears above the input with an ? to remove it; then type your question (or just press Enter to ask "Explain what is on my screen.") and it is sent together with the picture. The notch's own window is left out of the picture. A screenshot is taken **only when you press the button**, is kept in memory only until you send or remove it, and is never saved by mochi (Claude Code keeps its own record of the conversation, as it does for any chat). The picture is scaled to at most 1600 pixels wide. Apps that block screenshots come out black, and mochi tells you. The "Explain my screen" suggestion does both steps for you.
 - Answers are shown as formatted text (lists, bold, code blocks). Anything that looks like HTML is displayed as plain text, never run.
 
 ## While the notch is collapsed
@@ -123,7 +123,7 @@ All of it can be switched off with **Mochi personality** in the tray menu. Times
 - **Dancing:** while Apple Music plays he sways gently: the collapsed eyes, the little Mochi on Home and the one on the Music tab. It is a steady, gentle rhythm, not synced to the beat (Apple Music does not share the tempo).
 - **Break reminders:** after about 50 minutes of continuous Claude work (a gap of 5 minutes ends it) a green panel opens with a stretch / 20-20-20 suggestion. **Eye rest** runs a 20 second countdown, **Later** asks again in 10 minutes, **Skip** dismisses. Ignored for a minute it counts as Later. Nothing is shown while paused or while a game is in front.
 - **Time of day:** droopy, slower eyes from 23:00 to 05:00 and wider, livelier eyes from 06:00 to 10:00.
-- **Milestone:** when "jobs today" reaches 5, 10, 15, 20, 30, 40 or 50 the Done panel adds a "★ 5th job today" badge and extra confetti.
+- **Milestone:** when "jobs today" reaches 5, 10, 15, 20, 30, 40 or 50 the Done panel adds a "? 5th job today" badge and extra confetti.
 
 The tray's **Preview personality** menu shows nap, wake, the break reminder and the night / morning looks without waiting.
 
@@ -216,3 +216,12 @@ To try states without Claude, with mochi running:
 .\scripts\fake-events.ps1 -Scenario approval
 .\scripts\fake-events.ps1 -Scenario done
 ```
+
+## If something misbehaves
+
+- Mochi writes anything that went wrong to `%USERPROFILE%\.mochi\mochi.log` (errors in the notch, a crashed or frozen
+  window, mouse presses that did not arrive). If the notch ever stops reacting to clicks it rebuilds its own window
+  after two dropped presses in a row, and a crashed or hung page is rebuilt automatically.
+- `npm run soak` drives the real notch with a real mouse and keyboard for about six minutes (tabs, pause and resume,
+  the Focus timer, typing in Notes and Chat, a Claude job passing through, quick flicks across the notch) and checks
+  every result. It uses its own notes file, so your notes are untouched. Run it after changing anything in `src\`.

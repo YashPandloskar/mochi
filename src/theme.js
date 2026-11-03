@@ -82,6 +82,7 @@ const theme = {
     doneTurnGreenAfter: 4.5,
     doneCrossfade: 0.8,
     hoverPollMs: 50,
+    typingReleaseSeconds: 4, // pointer away and nothing typed for this long: a focused text box is let go so the notch can close
     hitHoldMs: 2500, // after switching to a shorter panel the old, taller area still counts as "on the notch"
     hoverDwell: 0.3, // the pointer must rest on the collapsed notch this long before it expands
     doneToIdleSeconds: 9, // "Done" holds this long (blue, then green) before the session returns to idle

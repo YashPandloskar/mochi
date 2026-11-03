@@ -23,14 +23,77 @@ function pickDisplay(monitor) {
 
 let currentMonitor = 'primary';
 
+const PARKED = -32000; // where the window waits while mochi is paused or a game is in front
+
 function place(monitor) {
   currentMonitor = monitor;
+  if (!visible) return; // stays parked; setVisible(true) places it
   const b = pickDisplay(monitor).bounds;
   const { width, height } = theme.window;
-  win.setBounds({ x: Math.round(b.x + (b.width - width) / 2), y: b.y, width, height });
+  const x = Math.round(b.x + (b.width - width) / 2);
+  // setPosition, not setBounds: on Windows a setBounds on this click-through window can leave it showing and
+  // hovering normally while every mouse press is silently dropped (reproduced in isolation). The size never
+  // changes, so only a first placement needs to set it.
+  const now = win.getBounds();
+  if (now.width !== width || now.height !== height) win.setSize(width, height);
+  win.setPosition(x, b.y);
 }
 
-function create(cfg) {
+// ---------- what went wrong, if anything: ~/.mochi/mochi.log ----------
+function log(msg) {
+  try {
+    require('fs').appendFileSync(path.join(require('./config').configDir(), 'mochi.log'), `${new Date().toISOString()} ${msg}\n`);
+  } catch {}
+}
+
+let lastCfg = null;
+let onCreated = null;
+let lastRecreate = 0;
+let droppedPresses = [];
+let displayHooked = false;
+
+// Builds the window again from scratch (a crash, a hang, or the mouse-press bug below). Everything the rest of
+// mochi pushes to the page is re-sent by onCreated.
+function recreate(reason) {
+  if (!win || win.isDestroyed() || !lastCfg) return;
+  if (Date.now() - lastRecreate < 15000) return log(`recreate skipped (${reason}): one was done a moment ago`);
+  lastRecreate = Date.now();
+  log(`recreating the window: ${reason}`);
+  clearInterval(pollTimer);
+  clearInterval(topTimer);
+  const old = win;
+  win = null;
+  hovering = false;
+  insideSince = 0;
+  try {
+    old.removeAllListeners('closed');
+    old.destroy();
+  } catch {}
+  create(lastCfg);
+}
+
+// The page saw a mouse release whose press never arrived (the press went to whatever is behind the notch). Seen
+// after a window was moved or resized while click-through; a new window always works, so after two in a row it is replaced.
+function pressDropped() {
+  const now = Date.now();
+  droppedPresses = droppedPresses.filter((t) => now - t < 12000);
+  droppedPresses.push(now);
+  log(`a mouse press did not reach the page (${droppedPresses.length})`);
+  if (droppedPresses.length >= 2) {
+    droppedPresses = [];
+    recreate('mouse presses are being dropped');
+  }
+}
+
+// cb(win) runs for the current window now and for every window built later (after a recreate)
+function whenCreated(cb) {
+  onCreated = cb;
+  if (win && !win.isDestroyed()) cb(win);
+}
+
+function create(cfg, created) {
+  lastCfg = cfg;
+  if (created) onCreated = created;
   win = new BrowserWindow({
     width: theme.window.width,
     height: theme.window.height,
@@ -58,7 +121,10 @@ function create(cfg) {
   win.setIgnoreMouseEvents(true, { forward: true });
   place(cfg.monitor);
   win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
-  win.once('ready-to-show', () => visible && win.showInactive());
+  win.once('ready-to-show', () => {
+    win.showInactive(); // always shown once; if mochi starts paused or with a game in front it is parked
+    if (!visible) win.setPosition(PARKED, PARKED);
+  });
 
   // Click-through: the window ignores the mouse except while the pointer is over the notch.
   // Polling the cursor is more reliable than forwarded mousemove events.
@@ -66,24 +132,48 @@ function create(cfg) {
   // Windows can slip another window (for example a maximized Claude) above an always-on-top window.
   // Re-assert the top position once a second; it does not take focus.
   topTimer = setInterval(() => {
-    if (!visible || !win || win.isDestroyed()) return;
+    if (!visible || !win || win.isDestroyed() || hovering) return; // never touch the window while it is being used
     win.moveTop();
-    applyMouse(); // cheap safety net: the click-through state can never stay out of step with the hover state
   }, 1000);
-  win.on('blur', () => {
-    if (!win.isFocusable()) return;
-    win.setFocusable(false);
+  const w = win;
+  w.on('blur', () => {
+    if (win !== w || !w.isFocusable()) return;
+    w.setFocusable(false);
     applyMouse();
-    win.webContents.send('window:blur');
+    w.webContents.send('window:blur');
   });
-  win.on('closed', () => {
+  w.on('closed', () => {
+    if (win !== w) return;
     clearInterval(pollTimer);
     clearInterval(topTimer);
     win = null;
   });
-  screen.on('display-metrics-changed', () => win && place(currentMonitor));
-  screen.on('display-removed', () => win && place(currentMonitor));
-  return win;
+
+  // a crashed, hung or failed page is rebuilt instead of leaving a dead notch on screen
+  w.webContents.on('render-process-gone', (_e, d) => {
+    log(`renderer process gone: ${d && d.reason}`);
+    if (win === w) setTimeout(() => recreate('renderer process gone'), 500);
+  });
+  w.on('unresponsive', () => {
+    log('window is not responding');
+    setTimeout(() => win === w && !w.isDestroyed() && w.webContents.isLoading() === false && recreate('window stayed unresponsive'), 8000);
+  });
+  w.webContents.on('did-fail-load', (_e, code, desc) => {
+    log(`page failed to load: ${code} ${desc}`);
+    setTimeout(() => win === w && !w.isDestroyed() && w.loadFile(path.join(__dirname, '..', 'renderer', 'index.html')), 1000);
+  });
+  // errors thrown inside the page end up in the log too
+  w.webContents.on('console-message', (e) => {
+    if (e && e.level === 'error') log(`page error: ${e.message} (${e.sourceId || ''}:${e.lineNumber || ''})`);
+  });
+
+  if (!displayHooked) {
+    displayHooked = true;
+    screen.on('display-metrics-changed', () => win && place(currentMonitor));
+    screen.on('display-removed', () => win && place(currentMonitor));
+  }
+  if (onCreated) onCreated(w);
+  return w;
 }
 
 function poll() {
@@ -135,12 +225,20 @@ function setVisible(on) {
   if (on === visible) return;
   visible = on;
   if (!win || win.isDestroyed()) return;
-  if (on) win.showInactive();
-  else {
-    hovering = false;
-    insideSince = 0;
-    win.setIgnoreMouseEvents(true, { forward: true });
-    win.hide();
+  // The window is never hidden: on Windows, win.hide() followed by win.show() leaves a window that is drawn and
+  // hovers fine but silently loses every mouse press (tested: the press never reaches the page, release does).
+  // Instead it is parked far outside every screen, where it cannot be seen, cannot be clicked and cannot get in
+  // the way of a fullscreen game, and moved back when it is wanted again.
+  hovering = false;
+  insideSince = 0;
+  win.setIgnoreMouseEvents(true, { forward: true });
+  if (on) {
+    place(currentMonitor);
+    if (!win.isVisible()) win.showInactive();
+    win.setAlwaysOnTop(true, 'screen-saver');
+    win.moveTop();
+  } else {
+    win.setPosition(PARKED, PARKED);
   }
 }
 
@@ -164,4 +262,4 @@ function reposition(monitor) {
   if (win) place(monitor);
 }
 
-module.exports = { create, setHitSize, send, reposition, pickDisplay, setVisible, setFocus };
+module.exports = { create, setHitSize, send, reposition, pickDisplay, setVisible, setFocus, pressDropped, recreate, whenCreated, current: () => win, log };

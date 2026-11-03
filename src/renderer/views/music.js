@@ -104,7 +104,7 @@
           r.title.textContent = m.title || 'Unknown track';
           r.artist.textContent = m.artist || '';
           r.album.textContent = m.album || '';
-          r.playpause.innerHTML = playing ? Icons.pause(20) : Icons.play(20);
+          setHtml(r.playpause, playing ? Icons.pause(20) : Icons.play(20));
           r.playpause.title = playing ? 'Pause' : 'Play';
           r.art.style.backgroundImage = m.art ? `url("${m.art}")` : '';
         } else {

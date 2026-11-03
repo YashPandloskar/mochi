@@ -126,7 +126,7 @@
       if (live) {
         r.title.textContent = m.title || 'Unknown track';
         r.artist.textContent = m.artist || '';
-        r.playpause.innerHTML = playing ? Icons.pause(14) : Icons.play(14);
+        setHtml(r.playpause, playing ? Icons.pause(14) : Icons.play(14));
         r.playpause.title = playing ? 'Pause' : 'Play';
         r.art.style.backgroundImage = m.art ? `url("${m.art}")` : '';
       } else {
@@ -183,7 +183,7 @@
       const onBreak = f.running && f.phase === 'break';
       r.focusLabel.textContent = onBreak ? 'Break' : 'Focus';
       r.focus.style.setProperty('--to', onBreak ? H.breakTileColor : H.tileColors.focus); // green while on a break
-      r.focusBtn.innerHTML = f.running ? Icons.stop(14) : Icons.play(14);
+      setHtml(r.focusBtn, f.running ? Icons.stop(14) : Icons.play(14));
       r.focusTime.textContent = f.running ? clock(f.left) : f.finished ? '0:00' : clock(f.total);
       r.focusSub.textContent = f.running
         ? `${Math.ceil(f.left / 60)} min left`

@@ -63,7 +63,9 @@
         : f.sessions
         ? `Session ${f.sessions + 1} next`
         : 'Ready to start';
-      r.go.innerHTML = (f.running ? Icons.stop(14) : Icons.play(14)) + `<span>${f.running ? 'Reset' : 'Start'}</span>`;
+      // Only touch the button when its content actually changes: replacing its children every 500 ms made the
+      // browser drop any click whose press and release straddled a refresh (about one in five of them).
+      setHtml(r.go, (f.running ? Icons.stop(14) : Icons.play(14)) + `<span>${f.running ? 'Reset' : 'Start'}</span>`);
       r.fmins.textContent = `${f.focusMinutes} min`;
       r.bmins.textContent = `${f.breakMinutes} min`;
       r.steps.classList.toggle('locked', f.running); // lengths cannot change while counting
@@ -77,9 +79,9 @@
       // today's finished focus periods as dots
       const n = f.sessions;
       const dots = Math.min(n, MAX_DOTS);
-      r.sessions.innerHTML = n
+      setHtml(r.sessions, n
         ? `<span class="fv-dots">${'<i></i>'.repeat(dots)}${n > MAX_DOTS ? `<b>+${n - MAX_DOTS}</b>` : ''}</span> ${n} focus session${n === 1 ? '' : 's'} today`
-        : 'No focus sessions yet today';
+        : 'No focus sessions yet today');
     }
     Focus.onChange(tick);
     setInterval(tick, 500);

@@ -16,6 +16,10 @@ const Chat = require('./chat');
 const screenshot = require('./screenshot');
 const Notes = require('./notes');
 
+// An error nobody caught must not pop up Electron's crash dialog or stop mochi: it goes to ~/.mochi/mochi.log.
+process.on('uncaughtException', (e) => windowMgr.log(`uncaught exception: ${e && e.stack ? e.stack : e}`));
+process.on('unhandledRejection', (e) => windowMgr.log(`unhandled rejection: ${e && e.stack ? e.stack : e}`));
+
 app.setName('mochi');
 // Windows toasts need an app identity; an unpackaged Electron app uses its own executable path.
 app.setAppUserModelId(app.isPackaged ? 'mochi' : process.execPath);
@@ -126,15 +130,19 @@ app.whenReady().then(() => {
       focusSessions: settings.focusSessions,
       personality: settings.personality,
     });
-  win.webContents.on('did-finish-load', () => {
-    const snap = state.snapshot();
-    windowMgr.send('state', snap.state);
-    windowMgr.send('session', snap);
-    if (usage.current) windowMgr.send('usage', usage.current);
-    windowMgr.send('music', music.current);
-    pushNotes();
-    pushSettings();
-  });
+  // for this window and for any the window manager rebuilds later (crash recovery)
+  windowMgr.whenCreated((w) =>
+    w.webContents.on('did-finish-load', () => {
+      const snap = state.snapshot();
+      windowMgr.send('state', snap.state);
+      windowMgr.send('session', snap);
+      if (usage.current) windowMgr.send('usage', usage.current);
+      windowMgr.send('music', music.current);
+      pushNotes();
+      pushSettings();
+    })
+  );
+  ipcMain.on('window:press-dropped', () => windowMgr.pressDropped());
 
   // ---------- notes and to-do: one Markdown file, also editable outside mochi ----------
   // MOCHI_NOTES_FILE lets a test copy use a scratch file instead of your real notes
@@ -207,7 +215,7 @@ app.whenReady().then(() => {
     else if (arg && typeof arg.text === 'string') chat.send(arg.text, arg.image);
   });
   // a screenshot is taken only when the camera button is pressed, and is never saved by mochi
-  ipcMain.handle('chat:capture', () => screenshot.capture(win));
+  ipcMain.handle('chat:capture', () => screenshot.capture(windowMgr.current()));
   ipcMain.on('chat:stop', () => chat.stop());
   ipcMain.on('chat:new', () => chat.reset());
   ipcMain.on('window:focus', (_e, on) => windowMgr.setFocus(!!on));

@@ -400,14 +400,38 @@
   }
 
   // ---------- hover (reported by the main process) ----------
+  // A text box that still has focus keeps the notch open (so it does not vanish while you type). If the pointer has
+  // been away for a few seconds and nothing has been typed, let go of it, so the notch can close and the keyboard goes
+  // back to the program you were using instead of staying captured.
+  let lastKey = 0;
+  let releaseTimer = null;
+  document.addEventListener('keydown', () => (lastKey = Date.now()), true);
+  function scheduleRelease() {
+    clearTimeout(releaseTimer);
+    releaseTimer = setTimeout(() => {
+      if (hover) return;
+      if (Date.now() - lastKey < ms(theme.timings.typingReleaseSeconds)) return scheduleRelease(); // still typing
+      const a = document.activeElement;
+      if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA')) a.blur(); // blur adds a half-typed task
+      window.mochi.focusWindow(false);
+      chatView.onWindowBlur();
+      Typing.reset();
+      scheduleCollapse();
+    }, ms(theme.timings.typingReleaseSeconds));
+  }
+
   window.mochi.onHover((inside) => {
     hover = inside;
     clearTimeout(collapseTimer);
+    clearTimeout(releaseTimer);
     if (inside) {
       poke();
       expand();
       if (state === 'done') turnGreen();
-    } else scheduleCollapse();
+    } else {
+      scheduleCollapse();
+      scheduleRelease();
+    }
   });
   window.mochi.onState((s) => {
     poke();
@@ -501,6 +525,19 @@
     chatView.onWindowBlur();
     Typing.reset();
   });
+  // A press that never reached the page but whose release did means the window's mouse input is broken (the press
+  // went to whatever is behind the notch). Main rebuilds the window if it happens twice in a row.
+  let pressSeen = false;
+  document.addEventListener('pointerdown', () => (pressSeen = true), true);
+  document.addEventListener('pointercancel', () => (pressSeen = false), true);
+  document.addEventListener(
+    'pointerup',
+    () => {
+      if (!pressSeen) window.mochi.pressDropped();
+      pressSeen = false;
+    },
+    true
+  );
   window.mochi.onNotesStatus((s) => notesView.setStatus(s));
   window.mochi.onNotes((d) => {
     notesView.update(d);

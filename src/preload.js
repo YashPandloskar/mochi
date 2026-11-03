@@ -21,6 +21,7 @@ contextBridge.exposeInMainWorld('mochi', {
   chatNew: () => ipcRenderer.send('chat:new'),
   onChat: (cb) => ipcRenderer.on('chat', (_e, ev) => cb(ev)),
   focusWindow: (on) => ipcRenderer.send('window:focus', on), // the notch takes keyboard focus only while you type
+  pressDropped: () => ipcRenderer.send('window:press-dropped'), // a mouse release arrived without its press
   onWindowBlur: (cb) => ipcRenderer.on('window:blur', () => cb()),
   onBreak: (cb) => ipcRenderer.on('break', (_e, info) => cb(info)),
   breakAnswer: (action) => ipcRenderer.send('break:answer', action), // ok | snooze
