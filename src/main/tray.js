@@ -64,6 +64,13 @@ function create({ getSettings, actions }) {
         ],
       },
       { type: 'separator' },
+      {
+        label: 'Claude Code connection',
+        submenu: [
+          { label: 'Connect to Claude Code', click: () => actions.claudeHooks('install') },
+          { label: 'Disconnect from Claude Code', click: () => actions.claudeHooks('uninstall') },
+        ],
+      },
       { label: 'Preview state', submenu: STATES.map(([label, id]) => ({ label, click: () => actions.preview(id) })) },
       {
         label: 'Preview personality',

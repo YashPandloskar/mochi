@@ -9,9 +9,47 @@
     "soak": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/soak.ps1",
     "hooks:install": "node scripts/hooks.js install",
     "hooks:uninstall": "node scripts/hooks.js uninstall",
-    "test": "node scripts/selftest.js && node scripts/selftest-usage.js && node scripts/selftest-music.js && node scripts/selftest-game.js && node scripts/selftest-breaks.js && node scripts/selftest-chat.js && node scripts/selftest-md.js && node scripts/selftest-focus.js && node scripts/selftest-notes.js && node scripts/selftest-providers.js"
+    "test": "node scripts/selftest.js && node scripts/selftest-usage.js && node scripts/selftest-music.js && node scripts/selftest-game.js && node scripts/selftest-breaks.js && node scripts/selftest-chat.js && node scripts/selftest-md.js && node scripts/selftest-focus.js && node scripts/selftest-notes.js && node scripts/selftest-providers.js",
+    "dist": "electron-builder --win nsis --publish never",
+    "dist:dir": "electron-builder --win dir --publish never"
   },
   "devDependencies": {
-    "electron": "^45.2.1"
+    "electron": "^45.2.1",
+    "electron-builder": "^26.18.0"
+  },
+  "author": "Yash Pandloskar",
+  "build": {
+    "appId": "com.mochi.notch",
+    "productName": "Mochi",
+    "asar": false,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "package.json",
+      "src/**/*",
+      "hooks/**/*",
+      "helpers/**/*",
+      "assets/**/*",
+      "scripts/hooks.js",
+      "scripts/mochi-ping.ps1"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.png"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "deleteAppDataOnUninstall": false,
+      "artifactName": "Mochi-Setup-${version}.${ext}"
+    }
   }
 }

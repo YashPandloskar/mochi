@@ -1,4 +1,4 @@
-const { app, ipcMain, globalShortcut, shell, safeStorage } = require('electron');
+const { app, ipcMain, globalShortcut, shell, safeStorage, dialog } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const theme = require('../theme');
@@ -372,6 +372,19 @@ app.whenReady().then(() => {
         pushSettings();
         pushProviders();
       }
+    },
+    // installs or removes mochi's Claude Code hooks (the same script as npm run hooks:install); a backup of settings.json is made first
+    claudeHooks(mode) {
+      const { spawnSync } = require('child_process');
+      const r = spawnSync(process.execPath, [path.join(__dirname, '..', '..', 'scripts', 'hooks.js'), mode, '--yes'], { env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }, encoding: 'utf8', timeout: 20000, windowsHide: true });
+      const ok = r.status === 0;
+      windowMgr.log('claude hooks ' + mode + ': exit ' + r.status + ' ' + String(r.stderr || '').slice(0, 300));
+      dialog.showMessageBox({
+        type: ok ? 'info' : 'error',
+        title: 'Mochi',
+        message: ok ? (mode === 'install' ? 'Connected to Claude Code.' : 'Disconnected from Claude Code.') : 'Could not change Claude Code settings.',
+        detail: ok ? (mode === 'install' ? 'Start a new Claude Code session for it to show up. Your old settings were backed up first.' : 'Mochi no longer listens to Claude Code.') : String(r.stderr || r.stdout || 'Unknown error').slice(0, 400),
+      });
     },
     preview: (s) => state.preview(s),
     personality: (kind) => (kind === 'break' ? windowMgr.send('break', { minutes: 50, preview: true }) : windowMgr.send('personality', kind)),
