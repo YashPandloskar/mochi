@@ -106,6 +106,17 @@ The **Chat** tab (message icon) is a plain conversation with Claude for everyday
 - **Explain my screen:** the camera button next to Send takes a screenshot of the display the notch is on. A thumbnail appears above the input with an ? to remove it; then type your question (or just press Enter to ask "Explain what is on my screen.") and it is sent together with the picture. The notch's own window is left out of the picture. A screenshot is taken **only when you press the button**, is kept in memory only until you send or remove it, and is never saved by mochi (Claude Code keeps its own record of the conversation, as it does for any chat). The picture is scaled to at most 1600 pixels wide. Apps that block screenshots come out black, and mochi tells you. The "Explain my screen" suggestion does both steps for you.
 - Answers are shown as formatted text (lists, bold, code blocks). Anything that looks like HTML is displayed as plain text, never run.
 
+### Other chat models, and any other tool
+
+Click the model name at the top of the Chat tab (or use the tray's **Chat with** menu) to pick who answers:
+
+- **Claude** (default): as above, through your Claude Code login.
+- **Gemini** (free key from Google AI Studio), **ChatGPT / OpenAI** (API key), **Local (Ollama)** (no key; Ollama must be running on this PC). For Gemini and OpenAI a card asks you to paste the key; **Get a key** opens the right page.
+- **Keys** are encrypted by Windows (DPAPI) in `~\.mochi\keys.json`, are never sent back to the interface, and are only ever sent to that model's own service. If Windows encryption is unavailable, keys are refused rather than stored in plain text. Remove a key from the same menu.
+- **Models:** defaults are `gemini-2.5-flash`, `gpt-4o-mini` and `llama3.2`. To use another, add `"providerModels": { "gemini": "model-name" }` to `~\.mochi\config.json`.
+- The notch reacts to chats like it does to Claude Code: thinking, replying, done, or error, with a small chip beside the notch naming the model. Chat answers no longer hold the notch open, so you can carry on working and it chimes when the answer is ready.
+- **What I use** (tray): **Both** (default, the interface is unchanged), **Claude Code only**, or **Chat only** (the Claude Code tile becomes an **Assistant** tile and the Claude tab is called Assistant).
+- **Ping from any tool:** `.\scripts\mochi-ping.ps1 working -Label "Cursor" -Message "Refactoring"` (states: working, needs, done, idle, error) sets the notch for any tool that can run a command. It posts to `POST /ping` on 127.0.0.1 with the same private token as the hooks.
 ## While the notch is collapsed
 
 - **Focus timer running:** the notch widens: a purple progress ring on the left, the eyes in the middle,
