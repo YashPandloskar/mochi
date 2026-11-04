@@ -5,179 +5,397 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mochi: a notch for Claude Code</title>
 <meta name="description" content="Mochi lives at the top of your Windows screen. It shows what Claude Code is doing, lets you approve actions, plays your music, times your focus and keeps your to-dos. Free, private, runs on your PC.">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#080b17">
+<meta property="og:type" content="website">
 <meta property="og:title" content="Mochi: a notch for Claude Code">
-<meta property="og:description" content="Your whole day, one hover away. Claude Code status, approvals, music, focus timer, to-dos and chat, in a tiny notch on Windows.">
+<meta property="og:description" content="Your whole day, one hover away. Claude Code status, approvals, music, focus timer, to-dos and chat in a tiny notch on Windows.">
 <meta property="og:image" content="media/poster.jpg">
-<meta name="theme-color" content="#0b0f1e">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="media/icon.png">
 <style>
+  /* ---------- tokens ---------- */
   :root {
-    --bg: #0b0f1e; --bg2: #121833; --card: rgba(255,255,255,.06); --line: rgba(255,255,255,.12);
-    --text: #f4f1ea; --muted: #a9adc4; --accent: #ffb067; --accent2: #e0793a; --ok: #7ee2a8;
-    --maxw: 1080px;
+    --bg: #080b17; --bg-2: #0d1226; --surface: #111833; --surface-2: #171f40;
+    --line: rgba(255,255,255,.11); --line-2: rgba(255,255,255,.2);
+    --text: #f6f2ea; --muted: #b3b9d1; --faint: #8e95b3;
+    --cream: #fffaf2; --amber: #ffb067; --amber-2: #e0793a; --ok: #7ee2a8; --alert: #ffd166; --ink: #1d1208;
+    --radius: 20px; --maxw: 1120px; --gutter: clamp(16px, 4vw, 32px);
+    --ease: cubic-bezier(.2, .8, .2, 1);
+    --font: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
-  * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
-  body { margin: 0; background: var(--bg); color: var(--text); font: 17px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 400 17px/1.65 var(--font); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+  img, video, svg { max-width: 100%; }
   a { color: inherit; }
-  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 20px; }
-  nav { position: sticky; top: 0; z-index: 10; backdrop-filter: blur(14px); background: rgba(11,15,30,.72); border-bottom: 1px solid var(--line); }
-  nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; }
-  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; text-decoration: none; }
-  .brand img { width: 28px; height: 28px; border-radius: 8px; }
-  nav .links { display: flex; align-items: center; gap: 22px; font-size: 15px; color: var(--muted); }
-  nav .links a { text-decoration: none; }
-  nav .links a:hover { color: var(--text); }
-  .btn { display: inline-flex; align-items: center; gap: 10px; padding: 14px 26px; border-radius: 999px; background: linear-gradient(180deg, var(--accent), var(--accent2)); color: #1d1208; font-weight: 700; text-decoration: none; font-size: 17px; box-shadow: 0 10px 34px rgba(224,121,58,.35); transition: transform .15s ease, box-shadow .15s ease; }
-  .btn:hover { transform: translateY(-2px); box-shadow: 0 14px 40px rgba(224,121,58,.5); }
-  .btn.small { padding: 9px 18px; font-size: 15px; box-shadow: none; color: #1d1208 !important; }
-  .btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); box-shadow: none; }
-  .hero { text-align: center; padding: 72px 0 40px; background: radial-gradient(900px 420px at 50% -80px, rgba(94,110,255,.32), transparent 70%); }
-  .pill { display: inline-block; padding: 6px 14px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: 14px; background: var(--card); }
-  h1 { font-size: clamp(38px, 6.4vw, 68px); line-height: 1.05; margin: 20px 0 16px; letter-spacing: -.02em; }
-  h1 em { font-style: normal; background: linear-gradient(90deg, var(--accent), #ff8aa0); -webkit-background-clip: text; background-clip: text; color: transparent; }
-  .lead { font-size: clamp(18px, 2.4vw, 22px); color: var(--muted); max-width: 640px; margin: 0 auto 28px; }
-  .cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
-  .fine { margin-top: 16px; color: var(--muted); font-size: 14px; }
-  .video { margin: 44px auto 0; max-width: 960px; border-radius: 18px; overflow: hidden; border: 1px solid var(--line); box-shadow: 0 30px 80px rgba(0,0,0,.55); background: #000; }
-  .video video { display: block; width: 100%; height: auto; }
-  section { padding: 76px 0; }
-  h2 { font-size: clamp(28px, 4vw, 40px); line-height: 1.15; margin: 0 0 12px; letter-spacing: -.01em; }
-  .sub { color: var(--muted); max-width: 620px; margin: 0 0 36px; }
-  .center { text-align: center; } .center .sub { margin-left: auto; margin-right: auto; }
-  .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
-  .card img { display: block; width: 100%; height: auto; aspect-ratio: 11 / 6; object-fit: cover; background: #000; }
-  .card .body { padding: 18px 20px 22px; }
-  .card h3 { margin: 0 0 6px; font-size: 20px; }
-  .card p { margin: 0; color: var(--muted); font-size: 15.5px; }
-  .band { background: var(--bg2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; counter-reset: s; }
-  .step { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 22px; position: relative; }
-  .step::before { counter-increment: s; content: counter(s); display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: #1d1208; font-weight: 800; margin-bottom: 12px; }
-  .step h3 { margin: 0 0 6px; font-size: 19px; } .step p { margin: 0; color: var(--muted); font-size: 15.5px; }
-  .note { margin-top: 18px; padding: 14px 18px; border-radius: 12px; border: 1px dashed var(--line); color: var(--muted); font-size: 15px; }
-  .ais { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
-  .ai { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; }
-  .ai b { display: block; font-size: 18px; margin-bottom: 4px; } .ai span { color: var(--muted); font-size: 15px; }
-  .tag { display: inline-block; font-size: 12px; padding: 2px 9px; border-radius: 999px; background: rgba(126,226,168,.14); color: var(--ok); margin-left: 6px; vertical-align: 2px; }
-  .tag.paid { background: rgba(255,176,103,.15); color: var(--accent); }
-  .safe { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px 28px; }
-  .safe li { padding-left: 30px; position: relative; color: var(--muted); }
-  .safe li::before { content: ""; position: absolute; left: 0; top: 6px; width: 16px; height: 16px; border-radius: 50%; background: var(--ok); opacity: .85; }
-  .safe b { color: var(--text); }
-  details { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 20px; margin-bottom: 12px; }
-  summary { cursor: pointer; font-weight: 650; }
-  details p { color: var(--muted); margin: 10px 0 0; font-size: 16px; }
-  footer { padding: 40px 0 60px; color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); }
+  p { margin: 0; }
+  h1, h2, h3 { margin: 0; line-height: 1.1; letter-spacing: -.02em; text-wrap: balance; }
+  :focus-visible { outline: 3px solid var(--amber); outline-offset: 3px; border-radius: 8px; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .skip { position: absolute; left: 12px; top: -60px; z-index: 100; background: var(--amber); color: var(--ink); padding: 10px 16px; border-radius: 10px; font-weight: 700; text-decoration: none; }
+  .skip:focus { top: 12px; }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 var(--gutter); }
+  .icon { width: 1.25em; height: 1.25em; flex: none; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* ---------- buttons ---------- */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 48px; padding: 0 26px; border-radius: 999px; border: 1px solid transparent; background: linear-gradient(180deg, var(--amber), var(--amber-2)); color: var(--ink); font: 700 17px/1 var(--font); text-decoration: none; cursor: pointer; box-shadow: 0 12px 36px rgba(224,121,58,.32); transition: transform .18s var(--ease), box-shadow .18s var(--ease), background-color .18s; }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 16px 44px rgba(224,121,58,.46); }
+  .btn:active { transform: translateY(0); }
+  .btn.ghost { background: rgba(255,255,255,.04); color: var(--text); border-color: var(--line-2); box-shadow: none; }
+  .btn.ghost:hover { background: rgba(255,255,255,.09); }
+  .btn.sm { min-height: 40px; padding: 0 18px; font-size: 15px; box-shadow: none; }
+
+  /* ---------- header ---------- */
+  header.top { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(16px) saturate(1.4); -webkit-backdrop-filter: blur(16px) saturate(1.4); background: rgba(8,11,23,.72); border-bottom: 1px solid var(--line); }
+  header.top .wrap { display: flex; align-items: center; justify-content: space-between; height: 64px; gap: 16px; }
+  .brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; text-decoration: none; letter-spacing: -.01em; }
+  .brand img { width: 30px; height: 30px; border-radius: 9px; }
+  header.top nav { display: flex; align-items: center; gap: 4px; }
+  header.top nav a:not(.btn) { padding: 10px 14px; color: var(--muted); text-decoration: none; font-size: 15px; border-radius: 10px; min-height: 44px; display: inline-flex; align-items: center; }
+  header.top nav a:not(.btn):hover { color: var(--text); background: rgba(255,255,255,.06); }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; padding: clamp(48px, 8vw, 96px) 0 clamp(32px, 5vw, 56px); text-align: center; background: radial-gradient(1100px 520px at 50% -120px, rgba(88,104,255,.34), transparent 68%), radial-gradient(700px 360px at 85% 20%, rgba(255,138,160,.12), transparent 70%); }
+  .eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 7px 15px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.05); color: var(--muted); font-size: 14px; }
+  .eyebrow .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 10px var(--ok); }
+  h1 { font-size: clamp(40px, 7.4vw, 78px); font-weight: 800; margin: 22px auto 18px; max-width: 14ch; }
+  h1 em { font-style: normal; background: linear-gradient(95deg, var(--amber) 10%, #ff8aa0 90%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .lead { font-size: clamp(18px, 2.3vw, 22px); color: var(--muted); max-width: 40em; margin: 0 auto 30px; text-wrap: pretty; }
+  .cta { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; }
+  .cta-note { margin-top: 18px; color: var(--faint); font-size: 14.5px; display: flex; gap: 8px 18px; justify-content: center; flex-wrap: wrap; }
+  .cta-note span { display: inline-flex; align-items: center; gap: 7px; }
+  .cta-note .icon { width: 1.1em; height: 1.1em; color: var(--ok); }
+
+  /* ---------- live notch demo ---------- */
+  .demo { margin: clamp(36px, 6vw, 64px) auto 0; max-width: 860px; }
+  .desk { position: relative; height: clamp(300px, 46vw, 400px); border-radius: 22px; overflow: hidden; border: 1px solid var(--line-2); background: linear-gradient(180deg, #0b1230 0%, #06091a 100%); box-shadow: 0 40px 90px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.06); text-align: left; }
+  .desk::before { content: ""; position: absolute; inset: 0; background: radial-gradient(520px 260px at 50% 110%, rgba(88,104,255,.35), transparent 70%); }
+  .win { position: absolute; left: 6%; right: 6%; top: 150px; bottom: -40px; border-radius: 14px 14px 0 0; background: #0d1226; border: 1px solid var(--line); border-bottom: 0; padding: 14px 18px; opacity: .9; }
+  .win i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #3a4166; margin-right: 6px; }
+  .code { margin-top: 14px; display: grid; gap: 9px; }
+  .code b { display: block; height: 8px; border-radius: 6px; background: #232b52; }
+  .code b:nth-child(3n) { background: #2d3a78; } .code b:nth-child(4n) { background: #4a3a63; }
+  .notch { --cx: 50%; position: absolute; top: 0; left: 50%; width: min(460px, calc(100% - 20px)); height: 188px; transform: translateX(-50%); background: #05070d; color: var(--text);
+    clip-path: inset(0 calc(50% - 96px) calc(100% - 40px) calc(50% - 96px) round 0 0 20px 20px);
+    transition: clip-path .6s var(--ease); box-shadow: 0 0 0 1px rgba(255,255,255,.07); }
+  .notch[data-state="working"], .notch[data-state="needs"], .notch[data-state="done"] { clip-path: inset(0 0 0 0 round 0 0 26px 26px); }
+  .eyes { position: absolute; top: 0; left: 0; right: 0; height: 40px; display: flex; align-items: center; justify-content: center; gap: 18px; }
+  .eye { width: 11px; height: 17px; border-radius: 50%; background: var(--cream); box-shadow: 0 0 12px rgba(255,250,242,.6); transition: background-color .4s, box-shadow .4s, height .3s; animation: blink 5s infinite; transform-origin: center; }
+  .notch[data-state="working"] .eye { background: var(--amber); box-shadow: 0 0 14px rgba(255,176,103,.85); }
+  .notch[data-state="needs"] .eye { background: var(--alert); box-shadow: 0 0 14px rgba(255,209,102,.85); }
+  .notch[data-state="done"] .eye { background: var(--ok); box-shadow: 0 0 14px rgba(126,226,168,.85); height: 9px; border-radius: 12px 12px 3px 3px; animation: none; }
+  @keyframes blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
+  .panes { position: absolute; left: 0; right: 0; top: 40px; bottom: 0; padding: 4px 22px 18px; }
+  .pane { position: absolute; inset: 4px 22px 18px; display: flex; align-items: center; gap: 16px; opacity: 0; visibility: hidden; transform: translateY(6px); transition: opacity .3s ease, transform .4s var(--ease), visibility 0s .3s; }
+  .notch[data-state="working"] .pane.working, .notch[data-state="needs"] .pane.needs, .notch[data-state="done"] .pane.done { opacity: 1; visibility: visible; transform: none; transition: opacity .35s ease .12s, transform .45s var(--ease) .12s, visibility 0s; }
+  .face { width: 56px; height: 56px; flex: none; }
+  .stat { min-width: 0; flex: 1; }
+  .stat small { display: block; color: var(--faint); font-size: 12.5px; line-height: 1.2; }
+  .stat strong { display: block; font-size: 30px; line-height: 1.1; font-weight: 800; font-variant-numeric: tabular-nums; margin: 2px 0; }
+  .stat span { color: var(--muted); font-size: 14px; display: block; line-height: 1.35; }
+  .steps4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; }
+  .steps4 i { height: 4px; border-radius: 4px; background: rgba(255,255,255,.14); position: relative; overflow: hidden; }
+  .steps4 i::after { content: ""; position: absolute; inset: 0; background: var(--amber); transform: scaleX(0); transform-origin: left; }
+  .notch[data-state="working"] .steps4 i:nth-child(-n+2)::after { transform: scaleX(1); transition: transform .8s var(--ease) .5s; }
+  .notch[data-state="working"] .steps4 i:nth-child(3)::after { transform: scaleX(.5); transition: transform 1.6s linear 1s; }
+  .ask { flex: 1; min-width: 0; }
+  .ask small { color: var(--alert); font-size: 12.5px; font-weight: 600; }
+  .ask h3 { font-size: 18px; margin: 2px 0 8px; letter-spacing: -.01em; }
+  .ask code { display: block; background: rgba(255,255,255,.07); border: 1px solid var(--line); border-radius: 9px; padding: 7px 11px; font: 500 14px/1.3 ui-monospace, "Cascadia Mono", Consolas, monospace; margin-bottom: 10px; }
+  .ask .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .chipbtn { min-height: 44px; padding: 0 20px; border-radius: 999px; border: 0; font: 700 15px/1 var(--font); cursor: pointer; }
+  .chipbtn.yes { background: var(--alert); color: #2b2100; } .chipbtn.no { background: rgba(255,255,255,.12); color: var(--text); }
+  .bubble { flex: 1; background: rgba(255,255,255,.08); border-radius: 14px; padding: 12px 15px; font-size: 14.5px; line-height: 1.4; }
+  .bubble b { display: block; color: var(--ok); margin-bottom: 2px; font-size: 13px; }
+  .confetti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  .confetti i { position: absolute; width: 6px; height: 6px; border-radius: 2px; opacity: 0; top: 52px; left: 50%; }
+  .notch[data-state="done"] .confetti i { animation: pop 1.1s var(--ease) both; }
+  @keyframes pop { 0% { opacity: 0; transform: translate(0, 0) scale(.4); } 25% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--x), var(--y)) rotate(220deg) scale(1); } }
+  .confetti i:nth-child(1) { --x: -150px; --y: -10px; background: var(--amber); } .confetti i:nth-child(2) { --x: -110px; --y: 70px; background: var(--ok); }
+  .confetti i:nth-child(3) { --x: -60px; --y: -30px; background: #ff8aa0; } .confetti i:nth-child(4) { --x: 70px; --y: -26px; background: var(--alert); }
+  .confetti i:nth-child(5) { --x: 120px; --y: 60px; background: var(--amber); } .confetti i:nth-child(6) { --x: 160px; --y: -8px; background: var(--ok); }
+  .demo-bar { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+  .seg { display: inline-flex; padding: 4px; border-radius: 999px; background: rgba(255,255,255,.06); border: 1px solid var(--line); gap: 2px; flex-wrap: wrap; justify-content: center; }
+  .seg button { min-height: 44px; padding: 0 16px; border-radius: 999px; border: 0; background: transparent; color: var(--muted); font: 600 14.5px/1 var(--font); cursor: pointer; transition: background-color .2s, color .2s; }
+  .seg button:hover { color: var(--text); }
+  .seg button[aria-pressed="true"] { background: var(--cream); color: #14110c; }
+  .play { min-width: 44px; min-height: 44px; border-radius: 50%; border: 1px solid var(--line-2); background: rgba(255,255,255,.05); color: var(--text); cursor: pointer; display: inline-grid; place-items: center; }
+  .play:hover { background: rgba(255,255,255,.12); }
+  .demo-cap { text-align: center; color: var(--faint); font-size: 14px; margin-top: 12px; }
+
+  /* ---------- sections ---------- */
+  section { padding: clamp(60px, 9vw, 110px) 0; }
+  .head { max-width: 46em; margin-bottom: clamp(28px, 4vw, 48px); }
+  .head.c { margin-left: auto; margin-right: auto; text-align: center; }
+  .kicker { color: var(--amber); font-weight: 700; font-size: 14px; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 12px; }
+  h2 { font-size: clamp(30px, 4.6vw, 48px); font-weight: 800; margin-bottom: 14px; }
+  .sub { color: var(--muted); font-size: clamp(17px, 2vw, 19px); text-wrap: pretty; }
+  .band { background: var(--bg-2); border-block: 1px solid var(--line); }
+
+  /* video */
+  .film { max-width: 980px; margin: 0 auto; border-radius: 22px; overflow: hidden; border: 1px solid var(--line-2); background: #000; box-shadow: 0 40px 100px rgba(0,0,0,.55); }
+  .film video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: #000; }
+  .transcript { max-width: 980px; margin: 14px auto 0; }
+
+  /* feature bento */
+  .bento { display: grid; grid-template-columns: repeat(12, 1fr); gap: 18px; }
+  .tile { grid-column: span 12; background: linear-gradient(180deg, var(--surface), var(--bg-2)); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column; transition: border-color .25s, transform .3s var(--ease); }
+  .tile:hover { border-color: var(--line-2); transform: translateY(-3px); }
+  .tile .txt { padding: 24px 26px 8px; }
+  .tile .ic { display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 13px; background: rgba(255,176,103,.14); color: var(--amber); margin-bottom: 14px; }
+  .tile h3 { font-size: 22px; margin-bottom: 8px; letter-spacing: -.01em; }
+  .tile p { color: var(--muted); font-size: 16px; }
+  .tile figure { margin: 16px 0 0; padding: 0 14px 14px; flex: 1; display: flex; align-items: flex-end; }
+  .tile img { width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); display: block; background: #000; }
+  @media (min-width: 760px) { .tile.w7 { grid-column: span 7; } .tile.w5 { grid-column: span 5; } .tile.w4 { grid-column: span 4; } .tile.w6 { grid-column: span 6; } }
+
+  /* AI picker */
+  .ais { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .ai { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 22px; }
+  .ai h3 { font-size: 20px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+  .ai p { color: var(--muted); font-size: 15.5px; }
+  .tag { font-size: 12.5px; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: rgba(126,226,168,.15); color: var(--ok); }
+  .tag.paid { background: rgba(255,176,103,.16); color: var(--amber); }
+
+  /* install */
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 18px; counter-reset: s; list-style: none; padding: 0; margin: 0; }
+  .steps li { counter-increment: s; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 24px; }
+  .steps li::before { content: counter(s); display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: var(--amber); color: var(--ink); font-weight: 800; margin-bottom: 14px; }
+  .steps h3 { font-size: 20px; margin-bottom: 6px; } .steps p { color: var(--muted); font-size: 16px; }
+  .callout { display: flex; gap: 14px; align-items: flex-start; margin-top: 20px; padding: 18px 20px; border-radius: 16px; border: 1px solid rgba(255,209,102,.35); background: rgba(255,209,102,.07); }
+  .callout .icon { color: var(--alert); margin-top: 3px; width: 1.4em; height: 1.4em; }
+  .callout p { color: var(--muted); font-size: 16px; } .callout b { color: var(--text); }
+  .callout.plain { border-color: var(--line); background: rgba(255,255,255,.04); } .callout.plain .icon { color: var(--amber); }
+
+  /* privacy */
+  .priv { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .priv div { padding: 22px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); }
+  .priv .icon { color: var(--ok); width: 1.6em; height: 1.6em; margin-bottom: 12px; }
+  .priv h3 { font-size: 18px; margin-bottom: 6px; } .priv p { color: var(--muted); font-size: 15.5px; }
+
+  /* faq */
+  .faq { max-width: 820px; margin: 0 auto; display: grid; gap: 12px; }
+  details { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; }
+  details[open] { border-color: var(--line-2); }
+  summary { cursor: pointer; list-style: none; padding: 18px 22px; font-weight: 650; font-size: 17px; display: flex; justify-content: space-between; align-items: center; gap: 16px; min-height: 56px; border-radius: 16px; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: ""; width: 10px; height: 10px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); transition: transform .25s var(--ease); flex: none; margin-right: 4px; }
+  details[open] summary::after { transform: rotate(-135deg); }
+  details p { padding: 0 22px 20px; color: var(--muted); font-size: 16.5px; }
+  code { font: 500 .92em ui-monospace, "Cascadia Mono", Consolas, monospace; background: rgba(255,255,255,.08); padding: 2px 7px; border-radius: 6px; }
+
+  /* final */
+  .final { text-align: center; background: radial-gradient(800px 380px at 50% 120%, rgba(88,104,255,.34), transparent 70%); }
+  .final img { width: 84px; height: 84px; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,.5); margin-bottom: 22px; }
+  footer { border-top: 1px solid var(--line); padding: 36px 0 calc(44px + env(safe-area-inset-bottom)); color: var(--faint); font-size: 14.5px; }
   footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 28px; justify-content: space-between; }
-  @media (max-width: 640px) { nav .links a.hide-sm { display: none; } section { padding: 56px 0; } .hero { padding-top: 48px; } }
-  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .btn { transition: none; } }
+  footer a { color: var(--muted); }
+
+  /* mobile download bar */
+  .dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; padding: 10px var(--gutter) calc(10px + env(safe-area-inset-bottom)); background: rgba(8,11,23,.9); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-top: 1px solid var(--line); transform: translateY(110%); transition: transform .35s var(--ease); display: none; }
+  .dock.show { transform: none; }
+  .dock .btn { width: 100%; }
+  @media (max-width: 720px) {
+    header.top nav a:not(.btn) { display: none; }
+    .dock { display: block; }
+    body { padding-bottom: 0; }
+    .stat strong { font-size: 24px; } .face { width: 46px; height: 46px; }
+    .pane { gap: 12px; } .ask h3 { font-size: 16px; }
+  }
+
+  /* scroll reveal (only when JS runs and motion is allowed) */
+  .js .rv { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .8s var(--ease); }
+  .js .rv.in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation: none !important; transition-duration: .01ms !important; transition-delay: 0s !important; }
+    .js .rv { opacity: 1; transform: none; }
+  }
+  @media (forced-colors: active) { .btn { border: 2px solid ButtonText; } .notch { border: 1px solid CanvasText; } }
 </style>
 </head>
 <body>
-<nav>
-  <div class="wrap">
-    <a class="brand" href="#top"><img src="media/icon.png" alt="">Mochi</a>
-    <div class="links">
-      <a class="hide-sm" href="#features">Features</a>
-      <a class="hide-sm" href="#install">Install</a>
-      <a class="hide-sm" href="#faq">FAQ</a>
-      <a class="btn small" href="https://github.com/YashPandloskar/mochi/releases/latest">Download</a>
-    </div>
-  </div>
-</nav>
+<a class="skip" href="#main">Skip to content</a>
 
-<header class="hero" id="top">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m0 0 5-5m-5 5-5-5M4 19h16"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M9 5v14M15 5v14"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 5 6v6c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/></symbol>
+  <symbol id="i-hand" viewBox="0 0 24 24"><path d="M9 11V5a1.5 1.5 0 0 1 3 0v5m0-1V4a1.5 1.5 0 0 1 3 0v6m0-3a1.5 1.5 0 0 1 3 0v7a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-3l-2-3a1.5 1.5 0 0 1 2.4-1.8L9 14"/></symbol>
+  <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></symbol>
+  <symbol id="i-timer" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3 10 14M21 3l-7 18-4-7-7-4z"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
+  <symbol id="i-win" viewBox="0 0 24 24"><path d="M3 5.5 11 4.4v7H3zM12 4.2 21 3v8.4h-9zM3 12.6h8v7L3 18.5zM12 12.6h9V21l-9-1.2z" fill="currentColor" stroke="none"/></symbol>
+</svg>
+
+<header class="top">
   <div class="wrap">
-    <span class="pill">For Windows 10 and 11 &middot; free &middot; runs on your PC</span>
-    <h1>Your whole day,<br><em>one hover away.</em></h1>
-    <p class="lead">Mochi is a tiny notch at the top of your screen. It shows what Claude Code is doing, lets you approve actions, controls your music, times your focus and keeps your to-dos.</p>
-    <div class="cta">
-      <a class="btn" href="https://github.com/YashPandloskar/mochi/releases/latest">Download for Windows</a>
-      <a class="btn ghost" href="#features">See what it does</a>
-    </div>
-    <p class="fine">Early version. Windows may show a warning because the app is new: choose <b>More info</b>, then <b>Run anyway</b>.</p>
-    <div class="video">
-      <video controls preload="metadata" poster="media/poster.jpg" playsinline>
-        <source src="media/mochi-trailer.mp4" type="video/mp4">
-        Your browser can't play this video.
-      </video>
-    </div>
+    <a class="brand" href="#top"><img src="media/icon.png" width="30" height="30" alt="">Mochi</a>
+    <nav aria-label="Main">
+      <a href="#features">Features</a>
+      <a href="#chat">Chat</a>
+      <a href="#install">Install</a>
+      <a href="#faq">FAQ</a>
+      <a class="btn sm" href="https://github.com/YashPandloskar/mochi/releases/latest"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Download</a>
+    </nav>
   </div>
 </header>
 
-<section id="features">
+<main id="main">
+<div class="hero" id="top">
   <div class="wrap">
-    <div class="center">
-      <h2>Everything in one small place</h2>
-      <p class="sub">Hover over the notch and it opens. Move away and it's gone again.</p>
+    <span class="eyebrow"><span class="dot" aria-hidden="true"></span>Free for Windows 10 and 11</span>
+    <h1>Your whole day, <em>one hover away.</em></h1>
+    <p class="lead">Mochi is a tiny notch at the top of your screen. It shows what Claude Code is doing, lets you approve actions, controls your music, times your focus and keeps your to-dos.</p>
+    <div class="cta">
+      <a class="btn" href="https://github.com/YashPandloskar/mochi/releases/latest"><svg class="icon" aria-hidden="true"><use href="#i-win"/></svg>Download for Windows</a>
+      <a class="btn ghost" href="#watch"><svg class="icon" aria-hidden="true"><use href="#i-play"/></svg>Watch the film</a>
     </div>
-    <div class="features">
-      <div class="card"><img src="media/home.jpg" alt="Mochi's home screen with Claude, Music and Focus tiles" loading="lazy"><div class="body"><h3>A home for your day</h3><p>Date, time, Claude Code, music, focus timer and your next task, all at a glance.</p></div></div>
-      <div class="card"><img src="media/approve.jpg" alt="Allow or deny a command from the notch" loading="lazy"><div class="body"><h3>Approve from the notch</h3><p>When Claude Code needs your OK, the notch opens with Allow and Deny. No window hunting.</p></div></div>
-      <div class="card"><img src="media/done.jpg" alt="Mochi celebrating a finished job" loading="lazy"><div class="body"><h3>Know the second it's done</h3><p>Live progress while Claude works, a soft chime and a tiny celebration when it finishes.</p></div></div>
-      <div class="card"><img src="media/music.jpg" alt="Music controls beside the notch" loading="lazy"><div class="body"><h3>Music, never in the way</h3><p>Apple Music art and controls next to the notch. Mochi dances along.</p></div></div>
-      <div class="card"><img src="media/focus.jpg" alt="Focus timer chiming at a switch" loading="lazy"><div class="body"><h3>Pomodoro, built in</h3><p>25 minutes on, 5 off, with a chime at every switch.</p></div></div>
-      <div class="card"><img src="media/notes.jpg" alt="To-do list and quick note" loading="lazy"><div class="body"><h3>Never lose a task</h3><p>A to-do list and a quick note, saved as a plain file you own.</p></div></div>
-      <div class="card"><img src="media/chat.jpg" alt="Chat panel in the notch" loading="lazy"><div class="body"><h3>Ask anything</h3><p>Chat with Claude, Gemini, ChatGPT or a local model, even about what's on your screen.</p></div></div>
-      <div class="card"><img src="media/nap.jpg" alt="Mochi napping while you are away" loading="lazy"><div class="body"><h3>He naps when you're away</h3><p>And wakes up the moment you're back. He'll also remind you to rest your eyes.</p></div></div>
+    <p class="cta-note">
+      <span><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>No account</span>
+      <span><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Runs on your PC</span>
+      <span><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Early version</span>
+    </p>
+
+    <div class="demo" aria-labelledby="demo-title">
+      <h2 id="demo-title" class="sr">Try the notch</h2>
+      <div class="desk">
+        <div class="win" aria-hidden="true"><i></i><i></i><i></i><div class="code"><b style="width:46%"></b><b style="width:72%"></b><b style="width:58%"></b><b style="width:34%"></b><b style="width:66%"></b><b style="width:80%"></b></div></div>
+        <div class="notch" id="notch" data-state="idle">
+          <div class="eyes" aria-hidden="true"><span class="eye"></span><span class="eye"></span></div>
+          <div class="panes">
+            <div class="pane working" aria-hidden="true">
+              <svg class="face" viewBox="0 0 56 56" aria-hidden="true"><ellipse cx="28" cy="30" rx="25" ry="21" fill="#fffaf2" stroke="#e5dccb" stroke-width="2"/><ellipse cx="19" cy="29" rx="3.2" ry="4.2" fill="#2b2824"/><ellipse cx="37" cy="29" rx="3.2" ry="4.2" fill="#2b2824"/><circle cx="14" cy="36" r="3" fill="#ffb0b8" opacity=".7"/><circle cx="42" cy="36" r="3" fill="#ffb0b8" opacity=".7"/></svg>
+              <div class="stat"><small>webshop</small><strong>0:12</strong><span>Editing cart.ts</span><div class="steps4"><i></i><i></i><i></i><i></i></div></div>
+            </div>
+            <div class="pane needs">
+              <div class="ask"><small>Needs you</small><h3>Allow this command?</h3><code>npm test</code>
+                <div class="row"><button class="chipbtn yes" type="button" data-act="allow">Allow</button><button class="chipbtn no" type="button" data-act="deny">Deny</button></div></div>
+            </div>
+            <div class="pane done" aria-hidden="true">
+              <svg class="face" viewBox="0 0 56 56" aria-hidden="true"><ellipse cx="28" cy="30" rx="25" ry="21" fill="#fffaf2" stroke="#e5dccb" stroke-width="2"/><path d="M13 29q6-7 12 0M31 29q6-7 12 0" fill="none" stroke="#2b2824" stroke-width="3" stroke-linecap="round"/><path d="M21 38q7 7 14 0" fill="#2b2824"/><circle cx="14" cy="36" r="3.4" fill="#ffb0b8" opacity=".8"/><circle cx="42" cy="36" r="3.4" fill="#ffb0b8" opacity=".8"/></svg>
+              <div class="bubble"><b>Done in 12 seconds</b>VAT is now added at checkout. All 48 tests pass.</div>
+            </div>
+          </div>
+          <div class="confetti" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        </div>
+      </div>
+      <div class="demo-bar">
+        <div class="seg" role="group" aria-label="Notch states">
+          <button type="button" data-s="idle" aria-pressed="true">Idle</button>
+          <button type="button" data-s="working" aria-pressed="false">Working</button>
+          <button type="button" data-s="needs" aria-pressed="false">Needs you</button>
+          <button type="button" data-s="done" aria-pressed="false">Done</button>
+        </div>
+        <button class="play" id="auto" type="button" aria-label="Pause the demo" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-pause"/></svg></button>
+      </div>
+      <p class="demo-cap">This is a mock-up of the real thing. Pick a state, or press Allow.</p>
+      <p class="sr" id="live" aria-live="polite"></p>
+    </div>
+  </div>
+</div>
+
+<section id="watch">
+  <div class="wrap">
+    <div class="head c rv"><p class="kicker">The film</p><h2>See it in 100 seconds</h2><p class="sub">Every frame is the real Mochi interface. Nothing is faked with video effects.</p></div>
+    <div class="film rv">
+      <video controls preload="none" poster="media/poster.jpg" playsinline aria-describedby="vt">
+        <source src="media/mochi-trailer.mp4" type="video/mp4">
+        Your browser can't play this video. You can <a href="media/mochi-trailer.mp4">download it</a> instead.
+      </video>
+    </div>
+    <details class="transcript"><summary id="vt">Read what the film shows</summary><p>Meet Mochi. Your whole day, one hover away: Claude, music, focus and notes right in the notch. Give Claude a task, then get on with your day. Mochi watches Claude work, asks you to allow or deny commands, and chimes with a tiny celebration when it's done. Music sits beside the notch. A Pomodoro timer chimes at every switch. A to-do list and quick note are saved as a plain file. Ask Claude anything, even about your screen. Mochi naps when you're away and reminds you to rest your eyes. Mochi: your Claude Code, living in the notch.</p></details>
+  </div>
+</section>
+
+<section class="band" id="features">
+  <div class="wrap">
+    <div class="head c rv"><p class="kicker">What's inside</p><h2>Everything in one small place</h2><p class="sub">Hover over the notch and it opens. Move away and it tucks back into the edge.</p></div>
+    <div class="bento">
+      <article class="tile w7 rv"><div class="txt"><span class="ic"><svg class="icon" aria-hidden="true"><use href="#i-hand"/></svg></span><h3>Approve from the notch</h3><p>When Claude Code needs your OK, the notch opens with Allow and Deny. No window hunting, no lost flow.</p></div><figure><img src="media/approve.jpg" width="1100" height="619" loading="lazy" alt="The notch asking to allow the command npm test, with Allow and Deny buttons"></figure></article>
+      <article class="tile w5 rv"><div class="txt"><span class="ic"><svg class="icon" aria-hidden="true"><use href="#i-sparkle"/></svg></span><h3>Know the second it's done</h3><p>Live progress while Claude works. A soft chime and a tiny celebration when it finishes.</p></div><figure><img src="media/done.jpg" width="1100" height="619" loading="lazy" alt="Mochi celebrating a finished job with the message that all 48 tests pass"></figure></article>
+      <article class="tile w4 rv"><div class="txt"><span class="ic"><svg class="icon" aria-hidden="true"><use href="#i-music"/></svg></span><h3>Music, never in the way</h3><p>Apple Music art and controls next to the notch. Mochi dances along.</p></div><figure><img src="media/music.jpg" width="1100" height="619" loading="lazy" alt="The Home panel showing a playing track beside the Claude and Focus tiles"></figure></article>
+      <article class="tile w4 rv"><div class="txt"><span class="ic"><svg class="icon" aria-hidden="true"><use href="#i-timer"/></svg></span><h3>Pomodoro, built in</h3><p>25 minutes on, 5 off, with a chime at every switch.</p></div><figure><img src="media/focus.jpg" width="1100" height="619" loading="lazy" alt="The notch showing a focus timer and a music thumbnail"></figure></article>
+      <article class="tile w4 rv"><div class="txt"><span class="ic"><svg class="icon" aria-hidden="true"><use href="#i-list"/></svg></span><h3>Never lose a task</h3><p>A to-do list and a quick note, saved as a plain file you own.</p></div><figure><img src="media/notes.jpg" width="1100" height="619" loading="lazy" alt="The to-do list with one task ticked off next to a quick note"></figure></article>
+      <article class="tile w6 rv"><div class="txt"><span class="ic"><svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg></span><h3>Ask anything</h3><p>Chat with Claude, Gemini, ChatGPT or a model on your own PC, even about what's on your screen.</p></div><figure><img src="media/chat.jpg" width="1100" height="619" loading="lazy" alt="The chat panel with suggestion chips and an input box"></figure></article>
+      <article class="tile w6 rv"><div class="txt"><span class="ic"><svg class="icon" aria-hidden="true"><use href="#i-moon"/></svg></span><h3>He naps when you're away</h3><p>And wakes up the moment you're back. He'll also nudge you to rest your eyes.</p></div><figure><img src="media/nap.jpg" width="1100" height="619" loading="lazy" alt="Mochi asleep in the notch while the desktop sits idle"></figure></article>
+    </div>
+  </div>
+</section>
+
+<section id="chat">
+  <div class="wrap">
+    <div class="head c rv"><p class="kicker">Your choice of AI</p><h2>Chat with the AI you like</h2><p class="sub">Pick who answers from the top of the Chat tab. Your key is encrypted by Windows and only ever sent to the AI you picked.</p></div>
+    <div class="ais">
+      <div class="ai rv"><h3>Claude <span class="tag">no key</span></h3><p>Uses your Claude Code login. Counts toward your normal Claude plan.</p></div>
+      <div class="ai rv"><h3>Gemini <span class="tag">free tier</span></h3><p>Paste a free key from Google AI Studio. Free-tier limits apply.</p></div>
+      <div class="ai rv"><h3>ChatGPT <span class="tag paid">paid API</span></h3><p>Paste an OpenAI API key. OpenAI bills per use, separately from a ChatGPT subscription.</p></div>
+      <div class="ai rv"><h3>Local (Ollama) <span class="tag">free</span></h3><p>Runs on your own PC. Private, no account, needs Ollama installed.</p></div>
     </div>
   </div>
 </section>
 
 <section class="band" id="install">
   <div class="wrap">
-    <div class="center">
-      <h2>Install in three steps</h2>
-      <p class="sub">No account, no sign-up. It installs for you only and needs no admin rights.</p>
-    </div>
-    <div class="steps">
-      <div class="step"><h3>Download</h3><p>Get <b>Mochi-Setup</b> from the Download button.</p></div>
-      <div class="step"><h3>Run it</h3><p>Double-click. If Windows says "protected your PC", choose <b>More info</b>, then <b>Run anyway</b>.</p></div>
-      <div class="step"><h3>Hover the notch</h3><p>Mochi appears at the top of your screen. Settings are in the tray icon.</p></div>
-    </div>
-    <div class="note"><b>Using Claude Code?</b> Right-click the tray icon, choose <b>Claude Code connection &rarr; Connect</b>, then start a new Claude Code session. A backup of your settings is made first.</div>
+    <div class="head c rv"><p class="kicker">Get started</p><h2>Install in three steps</h2><p class="sub">No account or sign-up. It installs for you only and needs no admin rights.</p></div>
+    <ol class="steps">
+      <li class="rv"><h3>Download</h3><p>Press <b>Download for Windows</b> and save <b>Mochi-Setup</b>.</p></li>
+      <li class="rv"><h3>Run it</h3><p>Double-click the file and let it install. Mochi opens by itself.</p></li>
+      <li class="rv"><h3>Hover the notch</h3><p>It sits at the top of your screen. Settings live in the tray icon.</p></li>
+    </ol>
+    <div class="callout rv" role="note"><svg class="icon" aria-hidden="true"><use href="#i-info"/></svg><p><b>Windows may warn you.</b> The installer isn't signed with a paid certificate yet, so Windows shows "Windows protected your PC". Choose <b>More info</b>, then <b>Run anyway</b>. If you'd rather not, the source code is on GitHub to read or build yourself.</p></div>
+    <div class="callout plain rv" role="note"><svg class="icon" aria-hidden="true"><use href="#i-sparkle"/></svg><p><b>Using Claude Code?</b> Right-click the tray icon, choose <b>Claude Code connection</b>, then <b>Connect</b>, and start a new Claude Code session. A backup of your Claude settings is made first.</p></div>
+    <div class="cta" style="margin-top:34px"><a class="btn" href="https://github.com/YashPandloskar/mochi/releases/latest"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Download for Windows</a></div>
   </div>
 </section>
 
-<section id="chat">
+<section id="privacy">
   <div class="wrap">
-    <h2>Chat with the AI you like</h2>
-    <p class="sub">Pick who answers from the top of the Chat tab. Keys are encrypted by Windows and never leave your PC except to go to the AI you picked.</p>
-    <div class="ais">
-      <div class="ai"><b>Claude <span class="tag">no key</span></b><span>Uses your Claude Code login.</span></div>
-      <div class="ai"><b>Gemini <span class="tag">free tier</span></b><span>Paste a free key from Google AI Studio.</span></div>
-      <div class="ai"><b>ChatGPT <span class="tag paid">paid API</span></b><span>Paste an OpenAI API key. Billed by OpenAI per use.</span></div>
-      <div class="ai"><b>Local (Ollama) <span class="tag">free</span></b><span>Runs on your own PC. Private, no account.</span></div>
+    <div class="head c rv"><p class="kicker">Privacy</p><h2>Private by design</h2><p class="sub">Mochi has no servers and no accounts. There's nothing to sign up for and nothing for us to collect.</p></div>
+    <div class="priv">
+      <div class="rv"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg><h3>Local only</h3><p>Mochi talks to your own computer, protected by a private token.</p></div>
+      <div class="rv"><svg class="icon" aria-hidden="true"><use href="#i-folder"/></svg><h3>Your files</h3><p>Notes, settings and keys live in a folder on your PC. Keys are encrypted by Windows.</p></div>
+      <div class="rv"><svg class="icon" aria-hidden="true"><use href="#i-send"/></svg><h3>You choose what's sent</h3><p>Chat goes only to the AI you picked. Screenshots are taken only when you press the camera button.</p></div>
+      <div class="rv"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg><h3>Easy to remove</h3><p>Uninstall from Windows Settings. Disconnecting from Claude Code is one click.</p></div>
     </div>
   </div>
 </section>
 
-<section class="band" id="safe">
+<section class="band" id="faq">
   <div class="wrap">
-    <h2>Private by design</h2>
-    <p class="sub">Mochi has no servers and no account. There's nothing to sign up for and nothing to collect.</p>
-    <ul class="safe">
-      <li><b>Local only.</b> It talks to your own computer, with a private token.</li>
-      <li><b>Your files.</b> Notes, settings and keys live in a folder on your PC.</li>
-      <li><b>You choose what's sent.</b> Chat goes only to the AI you picked. Screenshots only when you press the camera button.</li>
-      <li><b>Easy to remove.</b> Uninstall from Windows Settings. Disconnecting from Claude Code is one click.</li>
-    </ul>
+    <div class="head c rv"><p class="kicker">FAQ</p><h2>Questions, answered</h2></div>
+    <div class="faq">
+      <details class="rv"><summary>Do I need Claude Code?</summary><p>No. Music, Focus, notes and chat work without it. Claude Code is what makes the notch show live work and ask for approvals.</p></details>
+      <details class="rv"><summary>Why does Windows show a warning?</summary><p>The installer isn't signed with a paid certificate yet, so Windows treats it as unknown. Choose More info, then Run anyway. The source code is in the GitHub repository.</p></details>
+      <details class="rv"><summary>Does it cost anything?</summary><p>Mochi is free. Gemini has a free tier and Ollama is free. ChatGPT needs a paid OpenAI API key, billed by OpenAI and not by Mochi.</p></details>
+      <details class="rv"><summary>Does it work on Mac, or with several monitors?</summary><p>Windows 10 and 11 only for now. With several monitors, choose which one shows the notch from the tray menu.</p></details>
+      <details class="rv"><summary>Is it safe to connect to Claude Code?</summary><p>Mochi adds its hooks to your Claude settings and makes a backup first. If Mochi isn't running, the hooks do nothing, so Claude Code is never blocked. You can disconnect from the tray at any time.</p></details>
+      <details class="rv"><summary>How do I update it?</summary><p>There's no auto-update yet. Download the newest installer from the Releases page and run it over the old one. Your notes and settings are kept.</p></details>
+      <details class="rv"><summary>Something broke. What do I do?</summary><p>Quit Mochi from the tray and open it again. If it keeps happening, open an issue on GitHub and attach <code>.mochi\mochi.log</code> from your user folder.</p></details>
+    </div>
   </div>
 </section>
 
-<section id="faq">
-  <div class="wrap">
-    <h2>Questions</h2>
-    <p class="sub">Short answers.</p>
-    <details><summary>Do I need Claude Code?</summary><p>No. Music, Focus, notes and chat work without it. Claude Code is what makes the notch show live work and approvals.</p></details>
-    <details><summary>Why does Windows show a warning?</summary><p>The installer isn't signed with a paid certificate yet, so Windows treats it as unknown. Choose More info, then Run anyway. The source code is available in the repository.</p></details>
-    <details><summary>Does it cost anything?</summary><p>Mochi is free. Gemini has a free tier and Ollama is free. ChatGPT needs a paid OpenAI API key, and that's billed by OpenAI, not by Mochi.</p></details>
-    <details><summary>Does it work on Mac or multiple monitors?</summary><p>It's Windows 10 and 11 only for now. On several monitors you can choose which one shows the notch from the tray menu.</p></details>
-    <details><summary>Something broke. What do I do?</summary><p>Quit Mochi from the tray and open it again. If it keeps happening, open an issue on GitHub and attach <code>.mochi\mochi.log</code> from your user folder.</p></details>
+<section class="final">
+  <div class="wrap rv">
+    <img src="media/icon.png" width="84" height="84" alt="">
+    <h2>Meet Mochi.</h2>
+    <p class="sub" style="margin:0 auto 28px;max-width:30em">Your Claude Code, living in the notch. Free, private and ready in a minute.</p>
+    <div class="cta"><a class="btn" href="https://github.com/YashPandloskar/mochi/releases/latest"><svg class="icon" aria-hidden="true"><use href="#i-win"/></svg>Download for Windows</a><a class="btn ghost" href="https://github.com/YashPandloskar/mochi">View on GitHub</a></div>
   </div>
 </section>
+</main>
 
 <footer>
   <div class="wrap">
@@ -186,5 +404,80 @@
     <span>Not affiliated with Anthropic, Google, OpenAI or Apple.</span>
   </div>
 </footer>
+
+<div class="dock" id="dock"><a class="btn" href="https://github.com/YashPandloskar/mochi/releases/latest"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Download for Windows</a></div>
+
+<script>
+(function () {
+  var doc = document.documentElement;
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+  try { doc.classList.add('js'); } catch (e) {}
+
+  /* ----- scroll reveal ----- */
+  var rv = [].slice.call(document.querySelectorAll('.rv'));
+  if ('IntersectionObserver' in window && !reduce.matches) {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+    rv.forEach(function (el, i) { el.style.transitionDelay = (i % 3) * 70 + 'ms'; io.observe(el); });
+  } else { rv.forEach(function (el) { el.classList.add('in'); }); }
+
+  /* ----- mobile download bar (after the hero) ----- */
+  var dock = document.getElementById('dock');
+  var hero = document.getElementById('top');
+  if (dock && hero && 'IntersectionObserver' in window) {
+    new IntersectionObserver(function (es) { dock.classList.toggle('show', !es[0].isIntersecting); }, { threshold: 0 }).observe(hero);
+  }
+
+  /* ----- the notch demo ----- */
+  var notch = document.getElementById('notch');
+  var live = document.getElementById('live');
+  var btns = [].slice.call(document.querySelectorAll('.seg button'));
+  var autoBtn = document.getElementById('auto');
+  var order = ['idle', 'working', 'needs', 'done'];
+  var say = { idle: 'Idle. Mochi waits with glowing eyes.', working: 'Working. Claude is editing a file.', needs: 'Needs you. Allow or deny the command.', done: 'Done. All tests pass.' };
+  var idx = 0, timer = null, userPaused = reduce.matches, hovering = false, visible = true;
+
+  function setState(s, announce) {
+    idx = order.indexOf(s);
+    notch.setAttribute('data-state', s);
+    btns.forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-s') === s)); });
+    [].forEach.call(notch.querySelectorAll('.pane'), function (p) {
+      p.setAttribute('aria-hidden', String(!p.classList.contains(s)));
+    });
+    if (announce) live.textContent = say[s];
+  }
+  function tick() { setState(order[(idx + 1) % order.length], false); }
+  function sync() {
+    clearInterval(timer);
+    var run = !userPaused && !hovering && visible && !document.hidden;
+    if (run) timer = setInterval(tick, 3600);
+    autoBtn.setAttribute('aria-pressed', String(userPaused));
+    autoBtn.setAttribute('aria-label', userPaused ? 'Play the demo' : 'Pause the demo');
+    autoBtn.innerHTML = '<svg class="icon" aria-hidden="true"><use href="#' + (userPaused ? 'i-play' : 'i-pause') + '"/></svg>';
+  }
+  btns.forEach(function (b) {
+    b.addEventListener('click', function () { userPaused = true; setState(b.getAttribute('data-s'), true); sync(); });
+  });
+  autoBtn.addEventListener('click', function () { userPaused = !userPaused; sync(); });
+  [].forEach.call(notch.querySelectorAll('[data-act]'), function (b) {
+    b.addEventListener('click', function () {
+      userPaused = true;
+      var allow = b.getAttribute('data-act') === 'allow';
+      setState(allow ? 'done' : 'idle', true);
+      sync();
+    });
+  });
+  var demo = document.querySelector('.demo');
+  demo.addEventListener('mouseenter', function () { hovering = true; sync(); });
+  demo.addEventListener('mouseleave', function () { hovering = false; sync(); });
+  document.addEventListener('visibilitychange', sync);
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(function (es) { visible = es[0].isIntersecting; sync(); }, { threshold: 0.2 }).observe(demo);
+  }
+  setState('idle', false);
+  sync();
+})();
+</script>
 </body>
 </html>
