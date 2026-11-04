@@ -67,6 +67,7 @@
         <span class="ns-icon">${Icons.checklist(14)}</span>
         <span class="ns-title" data-r="notesTitle">To-do</span>
         <span class="ns-next" data-r="notesNext">Add a task or jot a note</span>
+        <span class="ns-more" data-r="notesMore" hidden></span>
         <span class="ns-go">${Icons.chevron(13)}</span>
       </button>
       `;
@@ -112,6 +113,10 @@
       r.notesTitle.textContent = todos.length ? 'To-do · ' + done + ' of ' + todos.length : 'To-do';
       r.notesNext.textContent = next ? next.text : todos.length ? 'All done' : d && d.note ? 'A note is saved' : 'Add a task or jot a note';
       r.notes.classList.toggle('all-done', !!todos.length && !next);
+      // the strip names the next task only; say how many more are waiting so a longer list is never mistaken for one
+      const more = todos.filter((t) => !t.done).length - 1;
+      r.notesMore.hidden = more < 1;
+      r.notesMore.textContent = `+${more} more`;
     }
 
     function renderMusic(m) {
