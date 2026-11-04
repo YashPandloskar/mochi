@@ -13,10 +13,20 @@
     el.className = 'chat-view';
     el.innerHTML = `
       <div class="chat-head">
-        <div class="chat-title">Chat <span>with Claude</span></div>
+        <div class="chat-title">Chat <span>with</span> <button class="chat-who" data-r="who" type="button" title="Choose who to chat with"><b data-r="whoName">Claude</b><i>▾</i></button></div>
         <button class="chat-new" data-r="new" type="button">New chat</button>
+        <div class="chat-menu" data-r="menu" hidden></div>
       </div>
       <div class="chat-list" data-r="list">
+        <div class="chat-setup" data-r="setup" hidden>
+          <div class="cs-title" data-r="setupTitle"></div>
+          <div class="cs-how" data-r="setupHow"></div>
+          <div class="cs-row">
+            <input data-r="keyInput" type="password" autocomplete="off" spellcheck="false" placeholder="Paste your key here">
+            <button class="cs-save" data-r="keySave" type="button">Save</button>
+          </div>
+          <div class="cs-foot"><button class="cs-link" data-r="keyLink" type="button">Get a key</button><span data-r="keyMsg">Stored encrypted on this PC. It is never shown again.</span></div>
+        </div>
         <div class="chat-empty" data-r="empty">
           <div class="chat-empty-mochi"></div>
           <div class="chat-empty-text">Ask me anything: plan something, explain something, draft a message.</div>
@@ -59,7 +69,7 @@
       r.attach.classList.remove('warn');
       r.thumb.hidden = false;
       r.thumb.removeAttribute('src');
-      r.ta.placeholder = 'Ask Claude anything…';
+      r.ta.placeholder = `Ask ${who().label} anything…`;
     }
     function note(text) {
       r.thumb.hidden = true;
@@ -190,8 +200,7 @@
     r.send.addEventListener('click', () => (busy ? window.mochi.chatStop() : send()));
     r.cam.addEventListener('click', attachScreen);
     r.x.addEventListener('click', clearAttach);
-    r.new.addEventListener('click', () => {
-      window.mochi.chatNew();
+    function clearConversation() {
       clearAttach();
       r.ta.value = '';
       autosize();
@@ -199,10 +208,75 @@
       current = null;
       hasMessages = false;
       for (const m of [...r.list.querySelectorAll('.msg')]) m.remove();
-      r.empty.hidden = false;
+      r.empty.hidden = !r.setup.hidden;
       setSend();
       onPinChange();
+    }
+    r.new.addEventListener('click', () => {
+      window.mochi.chatNew();
+      clearConversation();
     });
+
+    // ---- who you are chatting with: Claude, Gemini, ChatGPT or a local model ----
+    Typing.watch(r.keyInput);
+    let list = null; // { current, providers: [...] } from main
+    const who = () => (list && list.providers.find((p) => p.id === list.current)) || { id: 'claude', label: 'Claude', hasKey: true, needsKey: false };
+    function applyProviders(next) {
+      if (!next || !Array.isArray(next.providers)) return;
+      const switched = list && list.current !== next.current;
+      list = next;
+      const p = who();
+      r.whoName.textContent = p.label;
+      r.ta.placeholder = `Ask ${p.label} anything…`;
+      const needKey = p.needsKey && !p.hasKey;
+      r.setup.hidden = !needKey;
+      if (needKey) {
+        r.setupTitle.textContent = `Connect ${p.label}`;
+        r.setupHow.textContent = `${p.how} Paste the key below once and you can chat with ${p.label} from here.`;
+        r.keyMsg.textContent = list.encryption === false ? 'Windows cannot encrypt keys on this PC, so keys cannot be saved.' : 'Stored encrypted on this PC. It is never shown again.';
+      }
+      if (!hasMessages) r.empty.hidden = needKey;
+      if (switched) clearConversation();
+      r.menu.replaceChildren(
+        ...list.providers.map((q) => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'cm-item' + (q.id === list.current ? ' on' : '');
+          b.innerHTML = `<span>${q.label}</span><em>${q.needsKey ? (q.hasKey ? 'key saved' : 'needs a key') : q.id === 'ollama' ? 'on this PC' : 'ready'}</em>`;
+          b.addEventListener('click', async () => {
+            r.menu.hidden = true;
+            if (q.id === list.current) return;
+            const ok = await window.mochi.setChatProvider(q.id);
+            if (!ok) note('Wait for the answer to finish before switching.');
+          });
+          return b;
+        })
+      );
+      if (needKey && !r.keyInput.value) r.keyInput.placeholder = `Paste your ${p.label} key here`;
+    }
+    r.who.addEventListener('click', () => {
+      if (busy) return note('Wait for the answer to finish before switching.');
+      r.menu.hidden = !r.menu.hidden;
+    });
+    document.addEventListener('pointerdown', (e) => {
+      if (!r.menu.hidden && !e.target.closest('.chat-menu, .chat-who')) r.menu.hidden = true;
+    });
+    const saveKey = async () => {
+      const key = r.keyInput.value.trim();
+      if (!key) return;
+      r.keySave.disabled = true;
+      r.keyInput.value = ''; // the key leaves the page the moment it is sent
+      const res = await window.mochi.setChatKey(who().id, key);
+      r.keySave.disabled = false;
+      r.keyMsg.textContent = res && res.ok ? 'Saved.' : (res && res.error) || 'Could not save the key.';
+      r.keyMsg.classList.toggle('bad', !(res && res.ok));
+      if (res && res.ok) window.mochi.chatProviders().then(applyProviders);
+    };
+    r.keySave.addEventListener('click', saveKey);
+    r.keyInput.addEventListener('keydown', (e) => e.key === 'Enter' && saveKey());
+    r.keyLink.addEventListener('click', () => window.mochi.openKeyPage(who().id));
+    window.mochi.onChatProviders(applyProviders);
+    window.mochi.chatProviders().then(applyProviders).catch(() => {});
 
     // starter suggestions fill the input so you can finish the sentence
     C.suggestions.forEach((s) => {
@@ -270,7 +344,9 @@
           onPinChange();
         }
       },
-      pinned: () => busy || capturing || inputFocused,
+      // An arriving answer no longer holds the panel open: step away and the eyes (and the chip beside them) show
+      // the progress, and the notch tells you when it is done. Typing or taking a screenshot still pins it.
+      pinned: () => capturing || inputFocused,
       recentlyActive: (minutes) => hasMessages && Date.now() - lastActive < minutes * 60000,
       onWindowBlur() {
         inputFocused = false;

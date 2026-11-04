@@ -14,7 +14,7 @@ const notify = require('./notify');
 const BreakTimer = require('./breaks');
 const Chat = require('./chat');
 const Keys = require('./keys');
-const { Gemini, OpenAI, Ollama } = require('./providers');
+const { Gemini, OpenAI, Ollama, META } = require('./providers');
 const ChatHub = require('./chat-hub');
 const Activity = require('./activity');
 const screenshot = require('./screenshot');
@@ -266,6 +266,11 @@ app.whenReady().then(() => {
     } catch (e) {
       return { ok: false, error: e.message };
     }
+  });
+  // only the fixed key-creation pages listed in providers.js can be opened, never an address from the page
+  ipcMain.on('chat:open-key-page', (_e, id) => {
+    const url = typeof id === 'string' && META[id] && META[id].keyUrl;
+    if (url) shell.openExternal(url);
   });
   ipcMain.handle('chat:remove-key', (_e, id) => {
     if (['gemini', 'openai'].includes(id)) keys.remove(id);

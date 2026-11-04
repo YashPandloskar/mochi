@@ -44,6 +44,7 @@ Remove-Item $logFile -ErrorAction SilentlyContinue
 $notes = Join-Path $env:TEMP 'mochi-soak-notes.md'
 Remove-Item $notes -ErrorAction SilentlyContinue
 $env:MOCHI_NOTES_FILE = $notes
+$env:MOCHI_PORT = '47955' # the throw-away copy listens here, so Claude Code hook events cannot reach it
 Start-Process $electron -ArgumentList $root, '--remote-debugging-port=9333' -WindowStyle Hidden
 Remove-Item Env:MOCHI_NOTES_FILE
 Start-Sleep 10
@@ -51,7 +52,7 @@ $rnd = New-Object System.Random $Seed
 $tabs = 'home', 'claude', 'music', 'focus', 'notes', 'chat'
 
 for ($r = 1; $r -le $Rounds; $r++) {
-    $kind = $rnd.Next(0, 7)
+    $kind = $rnd.Next(0, 9)
     if ($Only -ge 0) { $kind = $Only }
     Write-Host "round ${r}: kind $kind"
     switch ($kind) {
@@ -111,7 +112,35 @@ for ($r = 1; $r -le $Rounds; $r++) {
             foreach ($i in 1..3) { $t = $tabs[$rnd.Next(0, 6)]; $p = At ".nav-item[data-tab=$t]"; if ($p) { Click $p } }
             Start-Sleep 9; Leave
         }
-        6 { # quick in-and-out flicks must neither open nor wedge the notch
+        7 { # choosing who to chat with: a model without a key asks for one, Claude is always ready, and switching back works
+            Open
+            $p = At '.nav-item[data-tab=chat]'; if ($p) { Click $p }
+            $who = At '[data-r=who]'
+            if ($who) {
+                Click $who
+                Check ([int](Ev "[...document.querySelectorAll('.cm-item')].filter(b => b.offsetParent).length") -eq 4) "round ${r}: the provider menu did not list four choices"
+                $item = At '.cm-item:nth-child(2)'; if ($item) { Click $item }
+                Check ((Ev "[...document.querySelectorAll('[data-r=whoName]')].find(b => b.offsetParent)?.textContent") -eq 'Gemini') "round ${r}: choosing Gemini did not switch"
+                Check ((Ev "![...document.querySelectorAll('[data-r=setup]')].every(b => b.hidden || !b.offsetParent)")) "round ${r}: Gemini without a key did not show the key card"
+                $who = At '[data-r=who]'; if ($who) { Click $who }
+                $item = At '.cm-item:nth-child(1)'; if ($item) { Click $item }
+                Check ((Ev "[...document.querySelectorAll('[data-r=whoName]')].find(b => b.offsetParent)?.textContent") -eq 'Claude') "round ${r}: switching back to Claude failed"
+            }
+            Leave
+        }
+        8 { # a ping from another tool: the chip beside the notch names it, and clears when the tool is idle
+            & (Join-Path $PSScriptRoot 'mochi-ping.ps1') working -Label 'Soak tool' -Message 'Working on it'
+            Start-Sleep 1.2
+            Check ((Ev "document.getElementById('chip').textContent + '|' + document.getElementById('chip').className") -match 'Soak tool\|show') "round ${r}: a working ping did not show on the chip"
+            & (Join-Path $PSScriptRoot 'mochi-ping.ps1') done -Label 'Soak tool' -Message 'All done'
+            Start-Sleep 1.2
+            Check ((Ev "document.getElementById('chip').className") -match 'done') "round ${r}: a done ping did not turn the chip green"
+            & (Join-Path $PSScriptRoot 'mochi-ping.ps1') idle
+            Start-Sleep 1.2
+            Check ((Ev "document.getElementById('chip').className") -notmatch 'show') "round ${r}: an idle ping did not clear the chip"
+            Open; $p = At '.nav-item[data-tab=home]'; if ($p) { Click $p; Check ((& $active) -eq 'home') "round ${r}: Home did not respond after a ping" }
+            Leave
+        }        6 { # quick in-and-out flicks must neither open nor wedge the notch
             Leave
             # a text box that still has focus is let go of after typingReleaseSeconds (4 s), then the notch closes
             $waited = 0; while ((& $expanded) -and $waited -lt 8) { Start-Sleep 1; $waited++ }
@@ -128,6 +157,7 @@ for ($r = 1; $r -le $Rounds; $r++) {
 $log = if (Test-Path $logFile) { Get-Content $logFile } else { @() }
 Check (-not ($log | Where-Object { $_ -notmatch 'AudioContext' } | Select-String 'page error|uncaught|unhandled|renderer process gone|recreating')) "mochi.log contains errors: $($log -join ' | ')"
 Get-Process electron -ErrorAction SilentlyContinue | Stop-Process -Force; Start-Sleep 2
+Remove-Item Env:MOCHI_PORT -ErrorAction SilentlyContinue
 Start-Process $electron -ArgumentList $root -WindowStyle Hidden
 Remove-Item $notes -ErrorAction SilentlyContinue
 

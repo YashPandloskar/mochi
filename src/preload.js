@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld('mochi', {
   chatProviders: () => ipcRenderer.invoke('chat:providers'), // { current, providers: [{ id, label, hasKey, needsKey, keyUrl, how, model }] }
   setChatProvider: (id) => ipcRenderer.invoke('chat:set-provider', id),
   setChatKey: (id, key) => ipcRenderer.invoke('chat:set-key', id, key), // the key goes one way: it is never sent back
+  openKeyPage: (id) => ipcRenderer.send('chat:open-key-page', id), // opens the provider's own page where you create a key
   removeChatKey: (id) => ipcRenderer.invoke('chat:remove-key', id),
   onChatProviders: (cb) => ipcRenderer.on('chat:providers', (_e, p) => cb(p)),
   onAssistant: (cb) => ipcRenderer.on('assistant', (_e, a) => cb(a)), // chat / ping activity: { source, label, phase, message, chatsToday, quiet, sounds }

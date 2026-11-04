@@ -462,3 +462,64 @@
 
 .nt-status { flex: none; padding: 6px 10px; border-radius: 10px; background: rgba(255, 120, 100, 0.16); color: #ffb3a6; font-size: 11px; line-height: 1.35; }
 .nt-status[hidden] { display: none; }
+
+/* ---------- assistant panel (Chat-only mode, or a ping from another tool) ---------- */
+.assistant .a-scene { position: relative; width: 96px; height: 88px; flex: none; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px; box-sizing: border-box; }
+.assistant .a-mochi { position: relative; z-index: 2; }
+.assistant[data-phase='done'] .a-mochi { animation: jump3 var(--jump-s) ease-in-out both; }
+.assistant[data-phase='error'] .a-mochi { animation: wobble var(--wobble-s) ease-in-out infinite; transform-origin: 50% 90%; }
+.a-cloud { display: none; position: absolute; right: 0; top: 0; gap: 4px; padding: 5px 8px; border-radius: 12px; background: rgba(255, 255, 255, 0.14); z-index: 3; }
+.a-cloud i { width: 5px; height: 5px; border-radius: 50%; background: #ffd7a8; animation: a-dot 1.2s ease-in-out infinite; }
+.a-cloud i:nth-child(2) { animation-delay: 0.18s; }
+.a-cloud i:nth-child(3) { animation-delay: 0.36s; }
+@keyframes a-dot { 0%, 60%, 100% { transform: translateY(0); opacity: 0.45; } 30% { transform: translateY(-4px); opacity: 1; } }
+.assistant[data-phase='thinking'] .a-cloud { display: flex; }
+.a-pad { display: none; position: absolute; right: -2px; bottom: 6px; width: 30px; height: 36px; z-index: 3; }
+.a-paper { fill: rgba(255, 255, 255, 0.92); }
+.a-line { stroke: #8c7a66; stroke-width: 3; stroke-linecap: round; fill: none; stroke-dasharray: 60; animation: a-write 2.4s ease-in-out infinite; }
+@keyframes a-write { 0% { stroke-dashoffset: 60; } 70%, 100% { stroke-dashoffset: 0; } }
+.a-pencil { display: none; position: absolute; right: -6px; bottom: 10px; width: 5px; height: 18px; border-radius: 2px; background: #ffb067; transform-origin: 50% 100%; z-index: 4; animation: a-pencil 0.6s ease-in-out infinite alternate; }
+@keyframes a-pencil { from { transform: rotate(18deg); } to { transform: rotate(30deg) translate(-3px, -2px); } }
+.assistant[data-phase='replying'] .a-pad, .assistant[data-phase='replying'] .a-pencil { display: block; }
+.a-spark { display: none; position: absolute; width: 8px; height: 8px; z-index: 3; background: #ffe9a8; clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); animation: a-twinkle 1.6s ease-in-out infinite; }
+.a-spark.s1 { left: 6px; top: 8px; }
+.a-spark.s2 { right: 8px; top: 2px; width: 6px; height: 6px; animation-delay: 0.5s; }
+.a-spark.s3 { right: 0; top: 30px; animation-delay: 1s; }
+@keyframes a-twinkle { 0%, 100% { transform: scale(0.3) rotate(0); opacity: 0; } 50% { transform: scale(1) rotate(45deg); opacity: 1; } }
+.assistant[data-phase='done'] .a-spark { display: block; }
+.a-q { display: none; position: absolute; right: 6px; top: 2px; font-weight: 700; font-size: 20px; color: #ffd07a; z-index: 3; animation: float-q var(--q-s) ease-in-out infinite; }
+.assistant[data-phase='needs'] .a-q { display: block; }
+.a-bar { flex: none; position: relative; height: var(--bar-h2); margin-top: 4px; border-radius: 99px; background: var(--bar-track2); overflow: hidden; }
+.a-bar i { position: absolute; top: 0; bottom: 0; left: 0; width: 30%; border-radius: 99px; background: var(--bar-fill); opacity: 0; }
+.assistant[data-phase='thinking'] .a-bar i, .assistant[data-phase='replying'] .a-bar i { opacity: 1; animation: a-slide 1.5s cubic-bezier(.4, 0, .2, 1) infinite; }
+.assistant[data-phase='replying'] .a-bar i { animation-duration: 0.9s; }
+.assistant[data-phase='done'] .a-bar i { opacity: 1; width: 100%; }
+@keyframes a-slide { 0% { left: -30%; } 100% { left: 100%; } }
+.assistant .bubble.empty { visibility: hidden; }
+.tile-claude.assistant-tile { cursor: pointer; }
+
+/* ---------- chat: who you are chatting with, and connecting a model ---------- */
+.chat-head { position: relative; }
+.chat-title span { color: var(--muted); font-weight: 400; }
+.chat-who { display: inline-flex; align-items: center; gap: 4px; margin-left: 2px; padding: 2px 8px; border-radius: 99px; border: 0; background: rgba(255, 255, 255, 0.1); color: var(--text); font: inherit; font-size: 12px; cursor: pointer; }
+.chat-who b { font-weight: 600; }
+.chat-who i { font-style: normal; font-size: 9px; opacity: 0.7; }
+.chat-who:hover { background: rgba(255, 255, 255, 0.16); }
+.chat-menu { position: absolute; left: 0; top: 100%; z-index: 20; min-width: 210px; margin-top: 4px; padding: 5px; border-radius: 12px; background: #17120c; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 0 0.5px rgba(255, 255, 255, 0.12); }
+.chat-menu[hidden] { display: none; }
+.cm-item { width: 100%; display: flex; align-items: baseline; justify-content: space-between; gap: 14px; padding: 7px 10px; border: 0; border-radius: 8px; background: transparent; color: var(--text); font: inherit; font-size: 12px; text-align: left; cursor: pointer; }
+.cm-item em { font-style: normal; font-size: 10px; color: var(--muted); }
+.cm-item:hover { background: rgba(255, 255, 255, 0.09); }
+.cm-item.on { background: rgba(255, 176, 103, 0.16); }
+.chat-setup { margin: 8px 4px 4px; padding: 14px; border-radius: 14px; background: rgba(255, 255, 255, 0.07); }
+.chat-setup[hidden] { display: none; }
+.cs-title { font-size: 14px; font-weight: 650; }
+.cs-how { margin-top: 4px; font-size: 11.5px; line-height: 1.4; color: var(--muted); }
+.cs-row { display: flex; gap: 8px; margin-top: 10px; }
+.cs-row input { flex: 1; min-width: 0; height: 30px; box-sizing: border-box; padding: 0 10px; border-radius: 99px; border: 0; background: rgba(0, 0, 0, 0.35); color: var(--text); font: inherit; font-size: 12px; outline: none; }
+.cs-row input:focus { box-shadow: 0 0 0 1.5px #ffc27d; }
+.cs-save { height: 30px; padding: 0 16px; border: 0; border-radius: 99px; background: #ffd07a; color: #3a2605; font: inherit; font-size: 12px; font-weight: 650; cursor: pointer; }
+.cs-save:disabled { opacity: 0.5; }
+.cs-foot { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 10.5px; color: var(--muted); }
+.cs-link { border: 0; background: transparent; padding: 0; color: #ffc27d; font: inherit; font-size: 11px; text-decoration: underline; cursor: pointer; }
+.cs-foot .bad { color: #ff9a9a; }

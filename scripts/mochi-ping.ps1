@@ -16,7 +16,8 @@ if (-not (Test-Path $cfgPath)) { Write-Error 'mochi has not been started yet (no
 $cfg = Get-Content $cfgPath -Raw | ConvertFrom-Json
 $body = @{ state = $State; label = $Label; message = $Message } | ConvertTo-Json -Compress
 try {
-    Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:$($cfg.port)/ping" -Headers @{ 'x-mochi-token' = $cfg.token } -ContentType 'application/json' -Body $body -TimeoutSec 3 | Out-Null
+    $port = if ($env:MOCHI_PORT) { $env:MOCHI_PORT } else { $cfg.port }
+    Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:$port/ping" -Headers @{ 'x-mochi-token' = $cfg.token } -ContentType 'application/json' -Body $body -TimeoutSec 3 | Out-Null
 } catch {
     Write-Error "Could not reach mochi: $($_.Exception.Message)"
     exit 1

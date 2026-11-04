@@ -6,6 +6,14 @@
   const instances = [];
   let handler = () => {};
   let active = 'home';
+  const labels = {}; // tab id -> label override (the Claude tab is called Assistant in Chat-only mode)
+  const relabel = (items, id, text) =>
+    items.forEach((b) => {
+      if (b.dataset.tab !== id) return;
+      b.title = text;
+      const label = b.querySelector('b');
+      if (label) label.textContent = text;
+    });
 
   function create() {
     const el = document.createElement('div');
@@ -23,7 +31,8 @@
     });
     const set = (id) => items.forEach((b) => b.classList.toggle('active', b.dataset.tab === id));
     set(active);
-    const inst = { el, set };
+    const inst = { el, set, items };
+    Object.entries(labels).forEach(([id, text]) => relabel(items, id, text));
     instances.push(inst);
     return inst;
   }
@@ -32,6 +41,10 @@
     create,
     onSelect: (fn) => (handler = fn),
     go: (id) => handler(id), // switch tab from code (e.g. the notes strip on Home)
+    setLabel(id, text) {
+      labels[id] = text;
+      instances.forEach((i) => relabel(i.items, id, text));
+    },
     setActive(id) {
       active = id;
       instances.forEach((i) => i.set(id));

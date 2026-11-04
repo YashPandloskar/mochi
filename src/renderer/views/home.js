@@ -36,7 +36,7 @@
       </div>
       <div class="tiles">
         <div class="tile tile-claude">
-          <div class="t-label">Claude code</div>
+          <div class="t-label" data-r="claudeLabel">Claude code</div>
           <span class="t-spark">${Icons.sparkle(20)}</span>
           <div class="t-big" data-r="timer">0:00</div>
           <div class="t-sub" data-r="status">Ready</div>
@@ -95,6 +95,23 @@
     let session = null;
     let usage = null;
 
+    // In Chat-only mode this tile becomes the Assistant tile (a chat request, or a ping from another tool). It stays the
+    // Claude Code tile whenever Claude Code is busy, and always in the other modes.
+    let assistantInfo = null; // { mode, a: { phase, startedAt, finishedAt, chatsToday, source }, label }
+    const tileClaude = el.querySelector('.tile-claude');
+    const assistantTile = () => !!(assistantInfo && assistantInfo.mode === 'chatOnly' && !(session && session.state && session.state !== 'idle'));
+    tileClaude.addEventListener('click', () => assistantTile() && Nav.go('claude'));
+    function tickAssistant() {
+      const { a, label } = assistantInfo;
+      const live = a.phase === 'thinking' || a.phase === 'replying';
+      const secs = live && a.startedAt ? (Date.now() - a.startedAt) / 1000 : a.finishedAt && a.startedAt ? (a.finishedAt - a.startedAt) / 1000 : 0;
+      const n = a.chatsToday || 0;
+      r.claudeLabel.textContent = 'Assistant';
+      r.timer.textContent = a.phase === 'idle' ? 'Ready' : clock(secs);
+      r.status.textContent =
+        a.phase === 'thinking' ? `${label} is thinking…` : a.phase === 'replying' ? `${label} is replying…` : a.phase === 'done' ? 'Answered' : a.phase === 'needs' ? 'Needs you' : a.phase === 'error' ? 'Could not answer' : n ? `${n} chat${n === 1 ? '' : 's'} today` : label;
+    }
+
     // ---------- Music tile (Apple Music) ----------
     const tileMusic = el.querySelector('.tile-music');
     const send = (cmd) => window.mochi.musicCommand(cmd);
@@ -143,7 +160,7 @@
 
     function renderUsage() {
       const box = r.usage;
-      if (!usage || !usage.enabled) {
+      if (assistantTile() || !usage || !usage.enabled) {
         box.hidden = true;
         return;
       }
@@ -180,9 +197,15 @@
       date.textContent = now.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).replace(',', '');
       time.textContent = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
-      const working = session && session.state === 'working' && session.startedAt;
-      r.timer.textContent = clock(working ? (Date.now() - session.startedAt) / 1000 : 0);
-      r.status.textContent = status();
+      const asTile = assistantTile();
+      tileClaude.classList.toggle('assistant-tile', asTile);
+      if (asTile) tickAssistant();
+      else {
+        r.claudeLabel.textContent = 'Claude code';
+        const working = session && session.state === 'working' && session.startedAt;
+        r.timer.textContent = clock(working ? (Date.now() - session.startedAt) / 1000 : 0);
+        r.status.textContent = status();
+      }
 
       const f = Focus.read();
       const onBreak = f.running && f.phase === 'break';
@@ -207,6 +230,7 @@
       update(next) {
         if (next.session) session = next.session;
         if (next.usage) usage = next.usage;
+        if (next.assistant) assistantInfo = next.assistant;
         if (next.music) renderMusic(next.music);
         if (next.notes) renderNotes(next.notes);
         renderUsage();
