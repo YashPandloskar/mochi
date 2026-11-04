@@ -1,26 +1,70 @@
-# mochi
+# Mochi
 
-A small notch fused to the top-centre edge of your primary display (Windows 10/11). It shows what
-Claude Code is doing, lets you allow or deny actions, and houses a mascot called Mochi.
-Personal use, local only: nothing leaves your machine.
+A small notch at the top-centre of your screen (Windows 10/11) that shows what Claude Code is doing, lets you allow or deny its actions, and has a little mascot called Mochi. It also has Apple Music controls, a Focus timer, a to-do list, and a chat with Claude, Gemini, ChatGPT or a local model.
+
+Everything runs on your own PC. Nothing is sent to us.
 
 - **Idle:** glowing eyes. Hover to open Home (date, Claude / Music / Focus tiles).
-- **Working:** orange eyes. Hover to see the project, a live timer, the current step and what is being edited.
-- **Needs you:** opens by itself with the command and **Allow** / **Deny** buttons.
-- **Done:** opens by itself, Mochi celebrates and shows Claude's final message.
+- **Working:** orange eyes. Hover to see the project, a live timer and the current step.
+- **Needs you:** opens by itself with **Allow** / **Deny** buttons.
+- **Done:** opens by itself and Mochi celebrates.
 
-## Requirements
+## Install (3 steps)
+
+1. Go to the **Releases** page of this repository and download **Mochi-Setup-x.y.z.exe**.
+2. Double-click it. Windows may say **"Windows protected your PC"** because the app is new and not yet signed. Click **More info**, then **Run anyway**. It installs for you only and does not need admin rights.
+3. Mochi opens at the top of your screen. Its settings are in the tray icon (bottom right, maybe under the `^` arrow).
+
+That's it. Hover over the notch to open it.
+
+### Use it with Claude Code (optional)
+
+Right-click the tray icon, choose **Claude Code connection**, then **Connect to Claude Code**. A backup of your Claude settings is made first. Then start a new Claude Code session. Mochi shows what it is doing and asks you to allow or deny actions. The usage bars also need [Node.js](https://nodejs.org) installed.
+
+### Chat with other AIs (optional)
+
+Open the **Chat** tab (message icon) and click the name at the top to pick who answers:
+
+- **Claude:** uses your Claude Code login, no key needed.
+- **Gemini:** paste a free key from [Google AI Studio](https://aistudio.google.com/apikey).
+- **ChatGPT:** paste an OpenAI API key. This is billed by OpenAI per use, separately from a ChatGPT subscription.
+- **Local (Ollama):** free and private, but you need [Ollama](https://ollama.com) installed.
+
+Keys are encrypted by Windows and stay on your PC. Remove one from the same menu.
+
+### Is it safe?
+
+- It only listens on your own computer (127.0.0.1) and uses a private token.
+- Your notes, settings and keys are in `C:\Users\<you>\.mochi`. They are never uploaded by Mochi.
+- Chat messages go only to the AI you chose. Screenshots are taken only when you press the camera button.
+- The installer is **unsigned** for now, which is why Windows warns you.
+
+### Uninstall
+
+Windows **Settings > Apps > Installed apps > Mochi > Uninstall**. Your notes and settings stay in `.mochi`; delete that folder too if you want everything gone. If you connected Claude Code, choose **Disconnect from Claude Code** in the tray first.
+
+### Something wrong?
+
+Mochi keeps a log at `C:\Users\<you>\.mochi\mochi.log`. Open an issue on this repository and attach it. Quitting from the tray and opening Mochi again fixes most things.
+
+---
+
+# For developers
+
+## Requirements (running from source)
 
 - Windows 10 or 11
 - Node.js 20 or newer (`node --version`)
 - Claude Code (hooks need a version that supports `PermissionRequest`; tested on 2.1.316)
 - Optional: the Apple Music desktop app for the Music tile
 
-## Install
+## Run from source
 
 ```powershell
-cd C:\Users\Lenovo\mochi
+git clone <this repository>
+cd mochi
 npm install
+npm start
 ```
 
 If `npm start` later says the Electron binary is missing, run `node node_modules\electron\install.js` once.
@@ -72,9 +116,9 @@ takes over (it has no nav bar). The nav bar can be taken off the Working and Don
 
 ## Notes and to-do
 
-The **Notes** tab (checklist icon) has a to-do list on the left and a quick note on the right. A strip under the Home tiles shows how far you are ("To-do · 2 of 5") and your next task; click it to open the tab.
+The **Notes** tab (checklist icon) has a to-do list on the left and a quick note on the right. A strip under the Home tiles shows how far you are ("To-do Â· 2 of 5") and your next task; click it to open the tab.
 
-- **Tasks:** type in "Add a task…" and press Enter. Click the box to tick a task, double-click its text to rename it (an emptied task is deleted), use the ? to delete, and **Clear done** removes the ticked ones.
+- **Tasks:** type in "Add a taskâ€¦" and press Enter. Click the box to tick a task, double-click its text to rename it (an emptied task is deleted), use the ? to delete, and **Clear done** removes the ticked ones.
 - **Nothing typed is lost:** a task you typed but did not confirm with Enter is added as soon as you click away, switch tab or the notch closes. **Esc** cancels instead. Every change is written to the file immediately; if Windows refuses a write, mochi retries and shows a red warning in the Notes tab until it succeeds.
 - **Quick note:** just type; it is saved a moment after you stop.
 - **It is a plain file:** `%USERPROFILE%\.mochi\notes.md`. **Open file** opens it in your editor, and changes made there appear in the notch within a second. The format is simple:
