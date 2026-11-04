@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mochi: a notch for Claude Code</title>
+<meta name="description" content="Mochi lives at the top of your Windows screen. It shows what Claude Code is doing, lets you approve actions, plays your music, times your focus and keeps your to-dos. Free, private, runs on your PC.">
+<meta property="og:title" content="Mochi: a notch for Claude Code">
+<meta property="og:description" content="Your whole day, one hover away. Claude Code status, approvals, music, focus timer, to-dos and chat, in a tiny notch on Windows.">
+<meta property="og:image" content="media/poster.jpg">
+<meta name="theme-color" content="#0b0f1e">
+<link rel="icon" href="media/icon.png">
+<style>
+  :root {
+    --bg: #0b0f1e; --bg2: #121833; --card: rgba(255,255,255,.06); --line: rgba(255,255,255,.12);
+    --text: #f4f1ea; --muted: #a9adc4; --accent: #ffb067; --accent2: #e0793a; --ok: #7ee2a8;
+    --maxw: 1080px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 17px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 20px; }
+  nav { position: sticky; top: 0; z-index: 10; backdrop-filter: blur(14px); background: rgba(11,15,30,.72); border-bottom: 1px solid var(--line); }
+  nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; text-decoration: none; }
+  .brand img { width: 28px; height: 28px; border-radius: 8px; }
+  nav .links { display: flex; align-items: center; gap: 22px; font-size: 15px; color: var(--muted); }
+  nav .links a { text-decoration: none; }
+  nav .links a:hover { color: var(--text); }
+  .btn { display: inline-flex; align-items: center; gap: 10px; padding: 14px 26px; border-radius: 999px; background: linear-gradient(180deg, var(--accent), var(--accent2)); color: #1d1208; font-weight: 700; text-decoration: none; font-size: 17px; box-shadow: 0 10px 34px rgba(224,121,58,.35); transition: transform .15s ease, box-shadow .15s ease; }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 14px 40px rgba(224,121,58,.5); }
+  .btn.small { padding: 9px 18px; font-size: 15px; box-shadow: none; color: #1d1208 !important; }
+  .btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); box-shadow: none; }
+  .hero { text-align: center; padding: 72px 0 40px; background: radial-gradient(900px 420px at 50% -80px, rgba(94,110,255,.32), transparent 70%); }
+  .pill { display: inline-block; padding: 6px 14px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: 14px; background: var(--card); }
+  h1 { font-size: clamp(38px, 6.4vw, 68px); line-height: 1.05; margin: 20px 0 16px; letter-spacing: -.02em; }
+  h1 em { font-style: normal; background: linear-gradient(90deg, var(--accent), #ff8aa0); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .lead { font-size: clamp(18px, 2.4vw, 22px); color: var(--muted); max-width: 640px; margin: 0 auto 28px; }
+  .cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .fine { margin-top: 16px; color: var(--muted); font-size: 14px; }
+  .video { margin: 44px auto 0; max-width: 960px; border-radius: 18px; overflow: hidden; border: 1px solid var(--line); box-shadow: 0 30px 80px rgba(0,0,0,.55); background: #000; }
+  .video video { display: block; width: 100%; height: auto; }
+  section { padding: 76px 0; }
+  h2 { font-size: clamp(28px, 4vw, 40px); line-height: 1.15; margin: 0 0 12px; letter-spacing: -.01em; }
+  .sub { color: var(--muted); max-width: 620px; margin: 0 0 36px; }
+  .center { text-align: center; } .center .sub { margin-left: auto; margin-right: auto; }
+  .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
+  .card img { display: block; width: 100%; height: auto; aspect-ratio: 11 / 6; object-fit: cover; background: #000; }
+  .card .body { padding: 18px 20px 22px; }
+  .card h3 { margin: 0 0 6px; font-size: 20px; }
+  .card p { margin: 0; color: var(--muted); font-size: 15.5px; }
+  .band { background: var(--bg2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; counter-reset: s; }
+  .step { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 22px; position: relative; }
+  .step::before { counter-increment: s; content: counter(s); display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: #1d1208; font-weight: 800; margin-bottom: 12px; }
+  .step h3 { margin: 0 0 6px; font-size: 19px; } .step p { margin: 0; color: var(--muted); font-size: 15.5px; }
+  .note { margin-top: 18px; padding: 14px 18px; border-radius: 12px; border: 1px dashed var(--line); color: var(--muted); font-size: 15px; }
+  .ais { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
+  .ai { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; }
+  .ai b { display: block; font-size: 18px; margin-bottom: 4px; } .ai span { color: var(--muted); font-size: 15px; }
+  .tag { display: inline-block; font-size: 12px; padding: 2px 9px; border-radius: 999px; background: rgba(126,226,168,.14); color: var(--ok); margin-left: 6px; vertical-align: 2px; }
+  .tag.paid { background: rgba(255,176,103,.15); color: var(--accent); }
+  .safe { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px 28px; }
+  .safe li { padding-left: 30px; position: relative; color: var(--muted); }
+  .safe li::before { content: ""; position: absolute; left: 0; top: 6px; width: 16px; height: 16px; border-radius: 50%; background: var(--ok); opacity: .85; }
+  .safe b { color: var(--text); }
+  details { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 20px; margin-bottom: 12px; }
+  summary { cursor: pointer; font-weight: 650; }
+  details p { color: var(--muted); margin: 10px 0 0; font-size: 16px; }
+  footer { padding: 40px 0 60px; color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 28px; justify-content: space-between; }
+  @media (max-width: 640px) { nav .links a.hide-sm { display: none; } section { padding: 56px 0; } .hero { padding-top: 48px; } }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .btn { transition: none; } }
+</style>
+</head>
+<body>
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#top"><img src="media/icon.png" alt="">Mochi</a>
+    <div class="links">
+      <a class="hide-sm" href="#features">Features</a>
+      <a class="hide-sm" href="#install">Install</a>
+      <a class="hide-sm" href="#faq">FAQ</a>
+      <a class="btn small" href="https://github.com/YashPandloskar/mochi/releases/latest">Download</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <span class="pill">For Windows 10 and 11 &middot; free &middot; runs on your PC</span>
+    <h1>Your whole day,<br><em>one hover away.</em></h1>
+    <p class="lead">Mochi is a tiny notch at the top of your screen. It shows what Claude Code is doing, lets you approve actions, controls your music, times your focus and keeps your to-dos.</p>
+    <div class="cta">
+      <a class="btn" href="https://github.com/YashPandloskar/mochi/releases/latest">Download for Windows</a>
+      <a class="btn ghost" href="#features">See what it does</a>
+    </div>
+    <p class="fine">Early version. Windows may show a warning because the app is new: choose <b>More info</b>, then <b>Run anyway</b>.</p>
+    <div class="video">
+      <video controls preload="metadata" poster="media/poster.jpg" playsinline>
+        <source src="media/mochi-trailer.mp4" type="video/mp4">
+        Your browser can't play this video.
+      </video>
+    </div>
+  </div>
+</header>
+
+<section id="features">
+  <div class="wrap">
+    <div class="center">
+      <h2>Everything in one small place</h2>
+      <p class="sub">Hover over the notch and it opens. Move away and it's gone again.</p>
+    </div>
+    <div class="features">
+      <div class="card"><img src="media/home.jpg" alt="Mochi's home screen with Claude, Music and Focus tiles" loading="lazy"><div class="body"><h3>A home for your day</h3><p>Date, time, Claude Code, music, focus timer and your next task, all at a glance.</p></div></div>
+      <div class="card"><img src="media/approve.jpg" alt="Allow or deny a command from the notch" loading="lazy"><div class="body"><h3>Approve from the notch</h3><p>When Claude Code needs your OK, the notch opens with Allow and Deny. No window hunting.</p></div></div>
+      <div class="card"><img src="media/done.jpg" alt="Mochi celebrating a finished job" loading="lazy"><div class="body"><h3>Know the second it's done</h3><p>Live progress while Claude works, a soft chime and a tiny celebration when it finishes.</p></div></div>
+      <div class="card"><img src="media/music.jpg" alt="Music controls beside the notch" loading="lazy"><div class="body"><h3>Music, never in the way</h3><p>Apple Music art and controls next to the notch. Mochi dances along.</p></div></div>
+      <div class="card"><img src="media/focus.jpg" alt="Focus timer chiming at a switch" loading="lazy"><div class="body"><h3>Pomodoro, built in</h3><p>25 minutes on, 5 off, with a chime at every switch.</p></div></div>
+      <div class="card"><img src="media/notes.jpg" alt="To-do list and quick note" loading="lazy"><div class="body"><h3>Never lose a task</h3><p>A to-do list and a quick note, saved as a plain file you own.</p></div></div>
+      <div class="card"><img src="media/chat.jpg" alt="Chat panel in the notch" loading="lazy"><div class="body"><h3>Ask anything</h3><p>Chat with Claude, Gemini, ChatGPT or a local model, even about what's on your screen.</p></div></div>
+      <div class="card"><img src="media/nap.jpg" alt="Mochi napping while you are away" loading="lazy"><div class="body"><h3>He naps when you're away</h3><p>And wakes up the moment you're back. He'll also remind you to rest your eyes.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="install">
+  <div class="wrap">
+    <div class="center">
+      <h2>Install in three steps</h2>
+      <p class="sub">No account, no sign-up. It installs for you only and needs no admin rights.</p>
+    </div>
+    <div class="steps">
+      <div class="step"><h3>Download</h3><p>Get <b>Mochi-Setup</b> from the Download button.</p></div>
+      <div class="step"><h3>Run it</h3><p>Double-click. If Windows says "protected your PC", choose <b>More info</b>, then <b>Run anyway</b>.</p></div>
+      <div class="step"><h3>Hover the notch</h3><p>Mochi appears at the top of your screen. Settings are in the tray icon.</p></div>
+    </div>
+    <div class="note"><b>Using Claude Code?</b> Right-click the tray icon, choose <b>Claude Code connection &rarr; Connect</b>, then start a new Claude Code session. A backup of your settings is made first.</div>
+  </div>
+</section>
+
+<section id="chat">
+  <div class="wrap">
+    <h2>Chat with the AI you like</h2>
+    <p class="sub">Pick who answers from the top of the Chat tab. Keys are encrypted by Windows and never leave your PC except to go to the AI you picked.</p>
+    <div class="ais">
+      <div class="ai"><b>Claude <span class="tag">no key</span></b><span>Uses your Claude Code login.</span></div>
+      <div class="ai"><b>Gemini <span class="tag">free tier</span></b><span>Paste a free key from Google AI Studio.</span></div>
+      <div class="ai"><b>ChatGPT <span class="tag paid">paid API</span></b><span>Paste an OpenAI API key. Billed by OpenAI per use.</span></div>
+      <div class="ai"><b>Local (Ollama) <span class="tag">free</span></b><span>Runs on your own PC. Private, no account.</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="safe">
+  <div class="wrap">
+    <h2>Private by design</h2>
+    <p class="sub">Mochi has no servers and no account. There's nothing to sign up for and nothing to collect.</p>
+    <ul class="safe">
+      <li><b>Local only.</b> It talks to your own computer, with a private token.</li>
+      <li><b>Your files.</b> Notes, settings and keys live in a folder on your PC.</li>
+      <li><b>You choose what's sent.</b> Chat goes only to the AI you picked. Screenshots only when you press the camera button.</li>
+      <li><b>Easy to remove.</b> Uninstall from Windows Settings. Disconnecting from Claude Code is one click.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <h2>Questions</h2>
+    <p class="sub">Short answers.</p>
+    <details><summary>Do I need Claude Code?</summary><p>No. Music, Focus, notes and chat work without it. Claude Code is what makes the notch show live work and approvals.</p></details>
+    <details><summary>Why does Windows show a warning?</summary><p>The installer isn't signed with a paid certificate yet, so Windows treats it as unknown. Choose More info, then Run anyway. The source code is available in the repository.</p></details>
+    <details><summary>Does it cost anything?</summary><p>Mochi is free. Gemini has a free tier and Ollama is free. ChatGPT needs a paid OpenAI API key, and that's billed by OpenAI, not by Mochi.</p></details>
+    <details><summary>Does it work on Mac or multiple monitors?</summary><p>It's Windows 10 and 11 only for now. On several monitors you can choose which one shows the notch from the tray menu.</p></details>
+    <details><summary>Something broke. What do I do?</summary><p>Quit Mochi from the tray and open it again. If it keeps happening, open an issue on GitHub and attach <code>.mochi\mochi.log</code> from your user folder.</p></details>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>Mochi &middot; made by Yash Pandloskar</span>
+    <span><a href="https://github.com/YashPandloskar/mochi">GitHub</a> &middot; <a href="https://github.com/YashPandloskar/mochi/issues">Report a problem</a></span>
+    <span>Not affiliated with Anthropic, Google, OpenAI or Apple.</span>
+  </div>
+</footer>
+</body>
+</html>
