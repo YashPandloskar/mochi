@@ -83,7 +83,7 @@ class ApiChat extends EventEmitter {
   async run(text, image, key) {
     const ctl = new AbortController();
     this.abort = ctl;
-    let idle = setTimeout(() => ctl.abort(new Error('timeout')), theme.chat.thinkingTimeoutSeconds * 1000);
+    let idle = setTimeout(() => ctl.abort(new Error('timeout')), (this.firstTimeoutSeconds || theme.chat.thinkingTimeoutSeconds) * 1000);
     const bump = () => {
       clearTimeout(idle);
       idle = setTimeout(() => ctl.abort(new Error('timeout')), theme.chat.thinkingTimeoutSeconds * 1000);
@@ -203,6 +203,7 @@ class ApiChat extends EventEmitter {
 class Gemini extends ApiChat {
   constructor(o) {
     super({ id: 'gemini', baseUrl: 'https://generativelanguage.googleapis.com', ...o });
+    this.firstTimeoutSeconds = 45; // no first word after this long: give up on this model instead of waiting two minutes
   }
   // newest "flash" model (else any) that can generate text for this key
   async discover(key, signal) {
@@ -217,7 +218,8 @@ class Gemini extends ApiChat {
       .map((m) => String(m.name || '').replace(/^models\//, ''))
       .filter((n) => /^gemini-[\d.]+-flash(-lite)?$/.test(n) || /^gemini-[\d.]+-flash$/.test(n));
     const ver = (n) => parseFloat(n.split('-')[1]) - (n.endsWith('-lite') ? 0.001 : 0);
-    names.sort((a, b) => ver(b) - ver(a));
+    // fast, lightly loaded models first: lite, then the rest
+    names.sort((a, b) => (b.endsWith('-lite') ? 1 : 0) - (a.endsWith('-lite') ? 1 : 0) || ver(b) - ver(a));
     return names;
   }
   request(history, text, image, key) {
