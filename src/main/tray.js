@@ -1,5 +1,6 @@
 const { Tray, Menu, nativeImage, screen, app } = require('electron');
 const path = require('path');
+const { META } = require('./providers');
 
 const STATES = [
   ['Idle', 'idle'],
@@ -37,6 +38,18 @@ function create({ getSettings, actions }) {
           { label: 'Subtle', type: 'radio', checked: s.motion !== 'lively', click: () => actions.setMotion('subtle') },
           { label: 'Lively', type: 'radio', checked: s.motion === 'lively', click: () => actions.setMotion('lively') },
         ],
+      },
+      {
+        label: 'What I use',
+        submenu: [
+          ['Claude Code and chat', 'both'],
+          ['Claude Code only', 'claudeCode'],
+          ['Chat only (no Claude Code)', 'chatOnly'],
+        ].map(([label, id]) => ({ label, type: 'radio', checked: s.assistantMode === id, click: () => actions.setAssistantMode(id) })),
+      },
+      {
+        label: 'Chat with',
+        submenu: Object.values(META).map((m) => ({ label: m.label, type: 'radio', checked: s.chatProvider === m.id, click: () => actions.setChatProvider(m.id) })),
       },
       {
         label: 'Monitor',

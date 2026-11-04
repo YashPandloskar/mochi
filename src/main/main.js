@@ -1,4 +1,4 @@
-const { app, ipcMain, globalShortcut, shell } = require('electron');
+const { app, ipcMain, globalShortcut, shell, safeStorage } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const theme = require('../theme');
@@ -13,6 +13,10 @@ const GameMode = require('./gamemode');
 const notify = require('./notify');
 const BreakTimer = require('./breaks');
 const Chat = require('./chat');
+const Keys = require('./keys');
+const { Gemini, OpenAI, Ollama, META } = require('./providers');
+const ChatHub = require('./chat-hub');
+const Activity = require('./activity');
 const screenshot = require('./screenshot');
 const Notes = require('./notes');
 
@@ -46,6 +50,8 @@ app.whenReady().then(() => {
     focusCycle: cfg.focusCycle,
     focusSessions: cfg.focusSessions,
     monitor: cfg.monitor,
+    assistantMode: ['both', 'claudeCode', 'chatOnly'].includes(cfg.assistantMode) ? cfg.assistantMode : 'both',
+    chatProvider: 'claude', // set from the chat hub below
   };
 
   ipcMain.on('theme:get', (e) => {
@@ -129,6 +135,9 @@ app.whenReady().then(() => {
       cycle: settings.focusCycle,
       focusSessions: settings.focusSessions,
       personality: settings.personality,
+      assistantMode: settings.assistantMode,
+      chatProvider: settings.chatProvider,
+      providerLabel: hub.info().label,
     });
   // for this window and for any the window manager rebuilds later (crash recovery)
   windowMgr.whenCreated((w) =>
@@ -140,6 +149,8 @@ app.whenReady().then(() => {
       windowMgr.send('music', music.current);
       pushNotes();
       pushSettings();
+      pushProviders();
+      pushAssistant();
     })
   );
   ipcMain.on('window:press-dropped', () => windowMgr.pressDropped());
@@ -208,16 +219,68 @@ app.whenReady().then(() => {
   ipcMain.on('notes:open', () => shell.openPath(notes.file));
 
   // ---------- chat (Claude through your own Claude Code login) ----------
+  // The Claude chat is unchanged (src/main/chat.js); the hub lets the same Chat tab talk to other models too.
   const chat = new Chat();
-  chat.on('event', (ev) => windowMgr.send('chat', ev));
+  const models = { ...theme.chat.models, ...(cfg.providerModels || {}) };
+  const keys = new Keys({ file: path.join(config.configDir(), 'keys.json'), safeStorage });
+  const providers = {
+    claude: chat,
+    gemini: new Gemini({ model: models.gemini, getKey: () => keys.get('gemini') }),
+    openai: new OpenAI({ model: models.openai, getKey: () => keys.get('openai') }),
+    ollama: new Ollama({ model: models.ollama }),
+  };
+  const hub = new ChatHub({ providers, current: cfg.chatProvider, keys, models });
+  settings.chatProvider = hub.current;
+
+  // What the assistant side is doing (a chat request, or a ping from another tool) is tracked apart from Claude Code.
+  const activity = new Activity({ chats: cfg.chatsToday, onChats: (chatsToday) => config.update({ chatsToday }) });
+  const pushAssistant = () => windowMgr.send('assistant', { ...activity.snapshot(), quiet: quiet(), sounds: settings.sounds });
+  activity.on('change', pushAssistant);
+  const pushProviders = () => windowMgr.send('chat:providers', hub.list());
+  hub.on('event', (ev) => {
+    windowMgr.send('chat', ev);
+    activity.chat(ev, hub.info().label);
+  });
   ipcMain.on('chat:send', (_e, arg) => {
-    if (typeof arg === 'string') chat.send(arg);
-    else if (arg && typeof arg.text === 'string') chat.send(arg.text, arg.image);
+    if (typeof arg === 'string') hub.send(arg);
+    else if (arg && typeof arg.text === 'string') hub.send(arg.text, arg.image);
+  });
+  ipcMain.handle('chat:providers', () => hub.list());
+  ipcMain.handle('chat:set-provider', (_e, id) => {
+    const ok = typeof id === 'string' && hub.setCurrent(id);
+    if (ok) {
+      settings.chatProvider = hub.current;
+      config.update({ chatProvider: hub.current });
+      pushSettings();
+      pushProviders();
+    }
+    return ok;
+  });
+  // the key is handed over once, stored encrypted, and never comes back to the page
+  ipcMain.handle('chat:set-key', (_e, id, key) => {
+    if (!['gemini', 'openai'].includes(id)) return { ok: false, error: 'That model does not use a key.' };
+    try {
+      keys.set(id, key);
+      pushProviders();
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  });
+  // only the fixed key-creation pages listed in providers.js can be opened, never an address from the page
+  ipcMain.on('chat:open-key-page', (_e, id) => {
+    const url = typeof id === 'string' && META[id] && META[id].keyUrl;
+    if (url) shell.openExternal(url);
+  });
+  ipcMain.handle('chat:remove-key', (_e, id) => {
+    if (['gemini', 'openai'].includes(id)) keys.remove(id);
+    pushProviders();
+    return { ok: true };
   });
   // a screenshot is taken only when the camera button is pressed, and is never saved by mochi
   ipcMain.handle('chat:capture', () => screenshot.capture(windowMgr.current()));
-  ipcMain.on('chat:stop', () => chat.stop());
-  ipcMain.on('chat:new', () => chat.reset());
+  ipcMain.on('chat:stop', () => hub.stop());
+  ipcMain.on('chat:new', () => hub.reset());
   ipcMain.on('window:focus', (_e, on) => windowMgr.setFocus(!!on));
 
   // ---------- renderer requests ----------
@@ -295,6 +358,20 @@ app.whenReady().then(() => {
       config.update({ monitor: id });
       windowMgr.reposition(id);
     },
+    setAssistantMode(m) {
+      if (!['both', 'claudeCode', 'chatOnly'].includes(m)) return;
+      settings.assistantMode = m;
+      config.update({ assistantMode: m });
+      pushSettings();
+    },
+    setChatProvider(id) {
+      if (hub.setCurrent(id)) {
+        settings.chatProvider = hub.current;
+        config.update({ chatProvider: hub.current });
+        pushSettings();
+        pushProviders();
+      }
+    },
     preview: (s) => state.preview(s),
     personality: (kind) => (kind === 'break' ? windowMgr.send('break', { minutes: 50, preview: true }) : windowMgr.send('personality', kind)),
   };
@@ -312,6 +389,7 @@ app.whenReady().then(() => {
     port: Number(process.env.MOCHI_PORT) || cfg.port,
     token: cfg.token,
     state,
+    activity,
     extra: () => ({ quiet: { paused: settings.paused, gameActive: game.active, foregroundExe: game.exe, gameMode: settings.gameMode } }),
   });
 
@@ -323,7 +401,8 @@ app.whenReady().then(() => {
   app.on('before-quit', () => {
     globalShortcut.unregisterAll();
     music.stop();
-    chat.reset();
+    Object.values(providers).forEach((p) => p.reset());
+    activity.stop();
     notes.stop();
     breaks.stop();
     game.stop();

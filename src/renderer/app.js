@@ -126,8 +126,21 @@
   let motion = theme.motion; // "subtle" or "lively" (tray setting overrides the theme default)
   document.documentElement.dataset.motion = motion;
 
+  // ---------- the assistant side: a chat request, or a ping from another tool ----------
+  // Claude Code stays in charge of `state`. Everything below only applies while Claude Code is idle, and only changes
+  // what is shown when you have chosen Chat-only mode, a tool is pinging, or a chat is being answered (the eyes).
+  const chip = document.getElementById('chip');
+  let assistant = { phase: 'idle', source: null, label: '' };
+  let mode = 'both'; // 'both' | 'claudeCode' | 'chatOnly'
+  let providerLabel = 'Claude';
+  const PHASE_EYES = { thinking: 'thinking', replying: 'replying', done: 'answered', needs: 'asking', error: 'failed' };
+  const eyeKey = () => (state === 'idle' && PHASE_EYES[assistant.phase]) || state;
+  // the Assistant panel takes the Claude tab only in Chat-only mode, or while a tool is pinging, and never over a job
+  const assistantPanel = () => state === 'idle' && (mode === 'chatOnly' || (assistant.source === 'ping' && assistant.phase !== 'idle'));
+  const assistantAuto = () => assistantPanel() && ['done', 'needs', 'error'].includes(assistant.phase);
+
   // Needs-you and Done open by themselves; Working stays as eyes until you hover.
-  const autoOpens = () => state === 'needs' || state === 'done' || breakActive;
+  const autoOpens = () => state === 'needs' || state === 'done' || breakActive || assistantAuto();
 
   // ---------- panel views ----------
   const home = window.HomeView.create();
@@ -135,6 +148,7 @@
   const done = window.DoneView.create();
   const needs = window.NeedsView.create();
   const claudeIdle = window.ClaudeIdleView.create();
+  const assistantView = window.AssistantView.create();
   const music = window.MusicView.create({
     onTint: (colour) => {
       musicTint = colour;
@@ -163,7 +177,7 @@
   Typing.onPinChange(() => {
     if (!Typing.pinned() && !chatView.pinned() && !hover) scheduleCollapse();
   });
-  const views = { home, working, done, needs, claudeIdle, music, focus, notes: notesView, break: brk, chat: chatView };
+  const views = { home, working, done, needs, claudeIdle, assistant: assistantView, music, focus, notes: notesView, break: brk, chat: chatView };
 
   content.append(...Object.values(views).map((v) => v.el));
 
@@ -171,13 +185,14 @@
   function viewKey() {
     if (state === 'needs') return 'needs';
     if (breakActive) return 'break';
-    if (tab === 'claude') return state === 'working' ? 'working' : state === 'done' ? 'done' : 'claudeIdle';
+    if (tab === 'claude') return assistantPanel() ? 'assistant' : state === 'working' ? 'working' : state === 'done' ? 'done' : 'claudeIdle';
     return tab;
   }
 
   // The tab to start on when the notch opens or the state changes.
   const defaultTab = () => {
     if (state === 'working' || state === 'done') return 'claude';
+    if (assistantPanel() && assistant.phase !== 'idle') return 'claude'; // something is going on: show it
     return chatView.recentlyActive(theme.chat.reopenMinutes) ? 'chat' : 'home'; // back to the conversation you were having
   };
 
@@ -221,18 +236,21 @@
       const key = viewKey();
       const p = theme.panels[key];
       const h = p.heightWithNav && theme.nav.onPanels ? p.heightWithNav : p.height;
-      const to = key === 'music' && musicTint ? musicTint : p.to;
+      let from = p.from;
+      let to = key === 'music' && musicTint ? musicTint : p.to;
+      if (key === 'assistant') [from, to] = theme.assistant.colors[assistant.phase] || theme.assistant.colors.idle; // the panel's colour follows what it is doing
       notch.style.width = theme.expanded.width + 'px';
       notch.style.height = h + 'px';
       notch.style.borderRadius = radius(theme.expanded.radius);
       notch.style.background = 'transparent';
       // the Focus tab turns green while on a break
       const g = key === 'focus' && Focus.read().running && Focus.read().phase === 'break' ? theme.panels.focusBreak : null;
-      gradient.style.background = `linear-gradient(to bottom, ${g ? g.from : p.from}, ${g ? g.to : to})`;
+      gradient.style.background = `linear-gradient(to bottom, ${g ? g.from : from}, ${g ? g.to : to})`;
       if (p.fromAlt) gradientAlt.style.background = `linear-gradient(to bottom, ${p.fromAlt}, ${p.toAlt})`;
       notch.classList.toggle('is-done', key === 'done'); // the green crossfade belongs to the Done panel only
       window.mochi.setHitSize({ w: theme.expanded.width, h, collapsed: false });
       bubble.classList.add('hide-expanded');
+      chip.classList.add('hide-expanded');
     } else {
       const w = timerOn ? theme.collapsed.timerWidth : theme.collapsed.width;
       notch.style.width = w + 'px';
@@ -243,6 +261,8 @@
       // the bubble sits just right of the notch and follows it when it widens
       bubble.style.left = `calc(50% + ${w / 2 + theme.companions.music.gap}px)`;
       bubble.classList.remove('hide-expanded');
+      chip.style.right = `calc(50% + ${w / 2 + theme.companions.music.gap}px)`; // just left of the notch
+      chip.classList.remove('hide-expanded');
       window.mochi.setHitSize({ w, h: theme.collapsed.height, collapsed: true });
     }
   }
@@ -318,14 +338,16 @@
   // ---------- eyes ----------
   function buildEyes() {
     const e = theme.eyes;
-    const cfg = e[state] || e.idle;
+    const key = eyeKey(); // Claude Code's state, or an assistant phase while Claude Code is idle
+    const cfg = e[key] || e.idle;
+    const vis = cfg.like || key; // the state whose motion and shape this one reuses
     const g = e.glow;
     const set = (k, v) => eyesEl.style.setProperty(k, v);
     set('--ec', cfg.color);
     set('--ew', cfg.width + 'px');
     // time-of-day look (idle eyes only): droopy at night, wider and livelier in the morning
     const P = theme.personality;
-    const look = state === 'idle' ? Personality.snapshot().look : 'day';
+    const look = key === 'idle' ? Personality.snapshot().look : 'day';
     const scale = look === 'night' ? P.night.eyeScale : look === 'morning' ? P.morning.eyeScale : 1;
     set('--eh', cfg.height * scale + 'px');
     set('--pulse', (cfg.pulse || 2.4) * (look === 'morning' ? P.morning.pulseScale : 1) + 's');
@@ -334,7 +356,7 @@
     set('--g-far', shadow(g.far, cfg.color));
     set('--g-near-p', shadow(g.nearPulse, cfg.color));
     set('--g-far-p', shadow(g.farPulse, cfg.color));
-    const lively = motion === 'lively' && state === 'working' ? theme.lively.workingEyes : null;
+    const lively = motion === 'lively' && vis === 'working' ? theme.lively.workingEyes : null;
     set('--drift', (lively ? lively.driftPx : cfg.driftPx || 0) + 'px');
     set('--drift-s', (lively ? lively.driftSeconds : cfg.driftSeconds || 5) + 's');
     set('--sweep-s', (lively ? lively.sweepSeconds : 2) + 's');
@@ -343,7 +365,7 @@
     set('--arc', (cfg.arcBorder || 3) + 'px');
     set('--bob', (cfg.bobPx || 0) + 'px');
     set('--bob-s', (cfg.bobSeconds || 2) + 's');
-    eyesEl.dataset.state = state;
+    eyesEl.dataset.state = vis;
 
     // Rebuild the nodes so one-shot animations (pop-in, sparks) replay on every entry.
     eyesEl.replaceChildren();
@@ -359,7 +381,7 @@
       sweep.className = 'sweep';
       eyesEl.appendChild(sweep);
     }
-    if (state === 'done') {
+    if (vis === 'done') {
       const sparks = document.createElement('div');
       sparks.className = 'sparks';
       for (let i = 0; i < cfg.sparks; i++) {
@@ -445,7 +467,49 @@
     needs.update(session);
     claudeIdle.update(session);
   });
+  // ---------- assistant activity (chat requests, pings) ----------
+  const refreshAssistantUi = () => {
+    home.update({ assistant: { mode, a: assistant, label: providerLabel } });
+    assistantView.update(assistant, providerLabel);
+    // the chip beside the collapsed notch names who is answering
+    const show = assistant.phase !== 'idle' && !!(assistant.label || providerLabel);
+    chip.textContent = assistant.source === 'ping' ? assistant.label : providerLabel;
+    chip.className = (show ? 'show ' : '') + (chip.classList.contains('hide-expanded') ? 'hide-expanded ' : '') + (['done', 'needs', 'error'].includes(assistant.phase) ? assistant.phase : '');
+  };
+  function applyMode(next) {
+    mode = next;
+    Nav.setLabel('claude', mode === 'chatOnly' ? 'Assistant' : 'Claude');
+    refreshAssistantUi();
+    if (expanded) {
+      showView();
+      applyGeometry();
+    }
+  }
+  window.mochi.onAssistant((next) => {
+    const was = assistant.phase;
+    assistant = next && next.phase ? next : { phase: 'idle', source: null, label: '' };
+    poke(); // a chat or a ping counts as activity: Mochi is not napping
+    buildEyes();
+    refreshAssistantUi();
+    // a soft sound when the answer arrives while you are not looking at the notch
+    if (!expanded && assistant.sounds && !assistant.quiet && was !== assistant.phase) {
+      if (assistant.phase === 'done') window.Chime.play('done');
+      else if (assistant.phase === 'needs') window.Chime.play('needs');
+    }
+    if (assistantAuto() && !expanded) expand();
+    else if (expanded) {
+      showView();
+      applyGeometry();
+      if (!autoOpens() && !hover) scheduleCollapse();
+    }
+  });
+
   window.mochi.onSettings((s) => {
+    if (s.providerLabel) {
+      providerLabel = s.providerLabel;
+      refreshAssistantUi();
+    }
+    if (s.assistantMode && s.assistantMode !== mode) applyMode(s.assistantMode);
     if (s.personality !== undefined) Personality.setEnabled(s.personality);
     Focus.loadConfig({ focusMinutes: s.focusMinutes, breakMinutes: s.breakMinutes, cycle: s.cycle });
     if (s.focusSessions) Focus.loadSessions(s.focusSessions);
@@ -469,7 +533,7 @@
   // Nap and dance are toggled as classes (so the eyes close slowly); the time-of-day look rebuilds the eyes.
   function applyEyeClasses(wake) {
     const s = Personality.snapshot();
-    const idle = state === 'idle';
+    const idle = eyeKey() === 'idle';
     const nap = idle && s.napping;
     eyesEl.classList.toggle('nap', nap);
     eyesEl.classList.toggle('dance', idle && s.dancing);
@@ -490,7 +554,7 @@
   let lastLook = 'day';
   let wasNapping = false;
   Personality.init({
-    canNap: () => state === 'idle' && !expanded && !hover && !timerOn,
+    canNap: () => state === 'idle' && assistant.phase === 'idle' && !expanded && !hover && !timerOn,
     onChange: (snap) => {
       home.setLook(snap);
       music.setLook(snap);

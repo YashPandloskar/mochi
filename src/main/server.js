@@ -40,9 +40,10 @@ function readBody(req) {
 
 // Listens on 127.0.0.1 only. Every request needs the shared token.
 //   POST /event     hook JSON, returns immediately
+//   POST /ping      { state, label?, message? } from any tool: scripts\mochi-ping.ps1
 //   POST /approval  PermissionRequest JSON, held open until Allow/Deny/timeout;
 //                   the response body is exactly what the hook script should print
-function start({ port, token, state, extra = () => ({}) }) {
+function start({ port, token, state, activity, extra = () => ({}) }) {
   const hostOk = new Set([`127.0.0.1:${port}`, `localhost:${port}`]);
 
   const server = http.createServer(async (req, res) => {
@@ -68,6 +69,12 @@ function start({ port, token, state, extra = () => ({}) }) {
 
       if (req.url === '/event') {
         state.handle(ev);
+        return reply(200, '{}');
+      }
+
+      // Any tool or script can set the notch: { "state": "working" | "needs" | "done" | "idle" | "error", "label": "Cursor", "message": "..." }
+      if (req.url === '/ping') {
+        if (!activity || !activity.ping(ev)) return reply(400, '{"error":"expected {state: working|needs|done|idle|error, label?, message?}"}');
         return reply(200, '{}');
       }
 

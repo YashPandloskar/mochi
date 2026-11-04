@@ -57,6 +57,7 @@ const theme = {
     notes: { height: 300, from: '#07070a', to: '#211b0b' },
     working: { height: 200, heightWithNav: 240, from: '#0b0604', to: '#4a2410' },
     claudeIdle: { height: 200, heightWithNav: 240, from: '#0b0604', to: '#4a2410' },
+    assistant: { height: 200, heightWithNav: 240, from: '#07060d', to: '#2a2147' }, // colours per phase: theme.assistant.colors
     music: { height: 232, from: '#040404', to: '#4a1824' }, // `to` is replaced by the album colour when there is art
     focus: { height: 250, from: '#07040f', to: '#3b1d6e' },
     focusBreak: { from: '#04100a', to: '#14573a' }, // the Focus tab while on a break (same height as focus)
@@ -82,6 +83,7 @@ const theme = {
     doneTurnGreenAfter: 4.5,
     doneCrossfade: 0.8,
     hoverPollMs: 50,
+    assistantErrorSeconds: 8, // a chat error stays on the notch this long
     typingReleaseSeconds: 4, // pointer away and nothing typed for this long: a focused text box is let go so the notch can close
     hitHoldMs: 2500, // after switching to a shorter panel the old, taller area still counts as "on the notch"
     hoverDwell: 0.3, // the pointer must rest on the collapsed notch this long before it expands
@@ -215,6 +217,7 @@ const theme = {
 
   // Chat tab: day-to-day questions to Claude, through your own Claude Code login (no API key).
   chat: {
+    models: { gemini: 'gemini-2.5-flash', openai: 'gpt-4o-mini', ollama: 'llama3.2' }, // defaults; override with providerModels in the config file
     maxChars: 20000, // longest message you can send
     maxImageBytes: 8_000_000, // largest picture (base64 characters) that can be attached
     screenPrompt: 'Explain what is on my screen.', // used when you attach a screenshot and type nothing
@@ -327,6 +330,28 @@ const theme = {
     working: { color: '#ff9a5c', width: 12, height: 7, blink: 5, pulse: 3.6, driftPx: 3, driftSeconds: 5 },
     needs: { color: '#ffd07a', width: 9, height: 17, pulse: 1, hopPx: 4, hopSeconds: 1.8 },
     done: { color: '#7dffa8', width: 13, height: 7, arcBorder: 3, bobPx: 2, bobSeconds: 2.2, sparks: 8, sparkRadius: 15 },
+    // the assistant side (a chat request, or a ping from another tool); `like` is the state whose motion they reuse
+    thinking: { like: 'working', color: '#ffb067', width: 12, height: 7, blink: 5, pulse: 3.2, driftPx: 4, driftSeconds: 3.6 },
+    replying: { like: 'working', color: '#ffc27d', width: 13, height: 8, blink: 4, pulse: 1.5, driftPx: 2, driftSeconds: 2.4 },
+    answered: { like: 'done', color: '#7dffa8', width: 13, height: 7, arcBorder: 3, bobPx: 2, bobSeconds: 2.2, sparks: 5, sparkRadius: 12 },
+    asking: { like: 'needs', color: '#ffd07a', width: 9, height: 17, pulse: 1, hopPx: 4, hopSeconds: 1.8 },
+    failed: { like: 'needs', color: '#ff9a9a', width: 9, height: 15, pulse: 1.3, hopPx: 2, hopSeconds: 2.6 },
+  },
+
+  // The Assistant panel (Chat-only mode, or a ping from another tool): its look while something is going on.
+  assistant: {
+    height: 200,
+    heightWithNav: 240,
+    colors: {
+      idle: ['#07060d', '#2a2147'],
+      thinking: ['#0b0604', '#4a2410'],
+      replying: ['#0b0604', '#4a2a10'],
+      done: ['#030d07', '#1d7040'],
+      needs: ['#0b0803', '#4a3309'],
+      error: ['#0d0404', '#5a1d1d'],
+    },
+    waitingHint: 'Ask anything in the Chat tab.',
+    pingHint: 'Nothing running right now. Tools can tell mochi what they are doing.',
   },
 };
 

@@ -18,6 +18,10 @@ const defaults = {
   focusSessions: { date: '', count: 0 }, // completed focus periods today
   motion: null, // "subtle" or "lively"; null means the theme default
   notesFile: null, // path of the notes Markdown file; null means ~\.mochi\notes.md
+  assistantMode: 'both', // what you use: 'both' | 'claudeCode' | 'chatOnly' (chatOnly turns the Claude Code tile into an Assistant tile)
+  chatProvider: 'claude', // which model the Chat tab talks to: claude | gemini | openai | ollama
+  providerModels: {}, // model names to use instead of the defaults, e.g. { "gemini": "gemini-2.5-pro" }
+  chatsToday: { date: '', count: 0 },
   // the user's own statusLine, saved by the hook installer so it can be chained and restored
   statusLineOriginal: null,
   jobs: { date: '', count: 0 },
