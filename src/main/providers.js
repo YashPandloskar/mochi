@@ -59,6 +59,11 @@ class ApiChat extends EventEmitter {
     this.abort = null;
   }
 
+  // the shared instructions, but naming the model that is actually answering (not always Claude)
+  system() {
+    return theme.chat.systemPrompt.replace(/^You are Claude/, `You are ${this.label}`);
+  }
+
   // subclasses: request(history, text, image, key) -> { url, headers, body }
   // and       read(res, signal) -> async generator of text pieces
   send(text, image) {
@@ -228,7 +233,7 @@ class Gemini extends ApiChat {
       url: `${this.baseUrl}/v1beta/models/${encodeURIComponent(this.model)}:streamGenerateContent?alt=sse`,
       headers: { 'x-goog-api-key': key },
       body: {
-        systemInstruction: { parts: [{ text: theme.chat.systemPrompt }] },
+        systemInstruction: { parts: [{ text: this.system() }] },
         contents: [...history.map((m) => ({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.text }] })), { role: 'user', parts: parts(text, image) }],
       },
     };
@@ -259,7 +264,7 @@ class OpenAI extends ApiChat {
     return {
       url: `${this.baseUrl}/v1/chat/completions`,
       headers: { authorization: `Bearer ${key}` },
-      body: { model: this.model, stream: true, messages: [{ role: 'system', content: theme.chat.systemPrompt }, ...history.map((m) => ({ role: m.role, content: m.text })), { role: 'user', content: user }] },
+      body: { model: this.model, stream: true, messages: [{ role: 'system', content: this.system() }, ...history.map((m) => ({ role: m.role, content: m.text })), { role: 'user', content: user }] },
     };
   }
   async *read(res, signal) {
@@ -290,7 +295,7 @@ class Ollama extends ApiChat {
       body: {
         model: this.model,
         stream: true,
-        messages: [{ role: 'system', content: theme.chat.systemPrompt }, ...history.map((m) => ({ role: m.role, content: m.text })), { role: 'user', content: text, ...(image ? { images: [image.data] } : {}) }],
+        messages: [{ role: 'system', content: this.system() }, ...history.map((m) => ({ role: m.role, content: m.text })), { role: 'user', content: text, ...(image ? { images: [image.data] } : {}) }],
       },
     };
   }
