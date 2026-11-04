@@ -110,6 +110,22 @@ class ApiChat extends EventEmitter {
         const again = this.request(this.history.slice(-MAX_TURNS), text, image, key);
         res = await this.fetch(again.url, { method: 'POST', headers: { 'content-type': 'application/json', ...again.headers }, body: JSON.stringify(again.body), signal: ctl.signal });
       }
+      if (res.status === 503 && this.candidates && !this.stopped) {
+        // still overloaded: try the service's other fast models, one each, and stay on the first that answers
+        const first = this.model;
+        const others = ((await this.candidates(key, ctl.signal).catch(() => [])) || []).filter((n) => n !== first).slice(0, 3);
+        for (const name of others) {
+          if (this.stopped) break;
+          this.model = name;
+          const again = this.request(this.history.slice(-MAX_TURNS), text, image, key);
+          const r = await this.fetch(again.url, { method: 'POST', headers: { 'content-type': 'application/json', ...again.headers }, body: JSON.stringify(again.body), signal: ctl.signal });
+          if (r.ok) {
+            res = r;
+            break;
+          }
+          this.model = first;
+        }
+      }
       if (!res.ok) throw await this.httpError(res);
       for await (const piece of this.read(res, ctl.signal)) {
         if (!piece) continue;
@@ -190,8 +206,11 @@ class Gemini extends ApiChat {
   }
   // newest "flash" model (else any) that can generate text for this key
   async discover(key, signal) {
+    return (await this.candidates(key, signal))[0] || null;
+  }
+  async candidates(key, signal) {
     const res = await this.fetch(`${this.baseUrl}/v1beta/models?pageSize=200`, { headers: { 'x-goog-api-key': key }, signal });
-    if (!res.ok) return null;
+    if (!res.ok) return [];
     const j = await res.json();
     const names = ((j && j.models) || [])
       .filter((m) => (m.supportedGenerationMethods || []).includes('generateContent'))
@@ -199,7 +218,7 @@ class Gemini extends ApiChat {
       .filter((n) => /^gemini-[\d.]+-flash(-lite)?$/.test(n) || /^gemini-[\d.]+-flash$/.test(n));
     const ver = (n) => parseFloat(n.split('-')[1]) - (n.endsWith('-lite') ? 0.001 : 0);
     names.sort((a, b) => ver(b) - ver(a));
-    return names[0] || null;
+    return names;
   }
   request(history, text, image, key) {
     const parts = (t, img) => [...(img ? [{ inlineData: { mimeType: img.mediaType, data: img.data } }] : []), { text: t }];
