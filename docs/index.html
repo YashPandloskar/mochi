@@ -66,22 +66,101 @@
   .cta-note span { display: inline-flex; align-items: center; gap: 7px; }
   .cta-note .icon { width: 1.1em; height: 1.1em; color: var(--ok); }
 
-  /* the theatre: real footage of the real interface */
-  .theatre { margin: clamp(36px, 6vw, 60px) auto 0; max-width: 940px; }
-  .screen { position: relative; border-radius: 22px; overflow: hidden; border: 1px solid var(--line-2); background: #0a0b18; box-shadow: 0 40px 90px rgba(0,0,0,.6); }
-  .screen video { display: block; width: 100%; height: auto; aspect-ratio: 1300 / 724; background: #0a0b18; }
-  .pp { position: absolute; right: 12px; bottom: 12px; min-width: 44px; min-height: 44px; border-radius: 50%; border: 1px solid var(--line-2); background: rgba(11,11,11,.7); color: var(--text); cursor: pointer; display: grid; place-items: center; backdrop-filter: blur(8px); }
-  .pp:hover { background: rgba(11,11,11,.9); }
-  .tabs { display: flex; justify-content: center; margin-top: 18px; }
+  /* the notch demo: drawn in code, with Mochi's real colours, gradients, eyes and layout (src/theme.js, styles.css) */
+  .demo { margin: clamp(36px, 6vw, 60px) auto 0; max-width: 880px; }
+  .desk { position: relative; height: clamp(330px, 50vw, 430px); border-radius: 22px; overflow: hidden; border: 1px solid var(--line-2); background: linear-gradient(160deg, #0a0b18 0%, #130c24 55%, #0b0814 100%); box-shadow: 0 40px 90px rgba(0,0,0,.6); text-align: left; }
+  .desk::before { content: ""; position: absolute; left: -60px; top: 30px; width: 380px; height: 300px; border-radius: 50%; background: #4b3dff; filter: blur(80px); opacity: .5; }
+  .desk::after { content: ""; position: absolute; right: -80px; top: 110px; width: 360px; height: 280px; border-radius: 50%; background: #ff4f9a; filter: blur(80px); opacity: .3; }
+  .win { position: absolute; z-index: 1; left: 6%; right: 6%; top: 190px; bottom: -40px; border-radius: 14px 14px 0 0; background: rgba(17,18,28,.86); border: 1px solid var(--line); border-bottom: 0; padding: 14px 18px; }
+  .win i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #3a4166; margin-right: 6px; }
+  .code { margin-top: 14px; display: grid; gap: 9px; }
+  .code b { display: block; height: 8px; border-radius: 6px; background: #232b52; }
+  .code b:nth-child(3n) { background: #2d3a78; } .code b:nth-child(4n) { background: #4a3a63; }
+
+  .notch { --cut: 0px; position: absolute; z-index: 5; top: 0; left: 50%; width: min(520px, calc(100% - 16px)); height: 252px; transform: translateX(-50%); background: #0b0b0b; color: var(--text);
+    clip-path: inset(0 calc(50% - 60px) calc(100% - 30px) calc(50% - 60px) round 0 0 14px 14px);
+    transition: clip-path .55s cubic-bezier(.34, 1.3, .5, 1); }
+  .notch[data-open="true"] { clip-path: inset(0 0 var(--cut) 0 round 0 0 28px 28px); }
+  .notch[data-state="working"], .notch[data-state="done"] { --cut: 12px; } .notch[data-state="needs"] { --cut: 40px; }
+  /* the panel gradients (theme.panels): working, needs, done blue then green */
+  .bg { position: absolute; inset: 0; opacity: 0; transition: opacity .3s linear; }
+  .bg.working { background: linear-gradient(#0b0604, #4a2410); } .bg.needs { background: linear-gradient(#0b0803, #4a3309); }
+  .bg.blue { background: linear-gradient(#040916, #1b4fc4); } .bg.green { background: linear-gradient(#030d07, #1d7040); }
+  .notch[data-open="true"][data-state="working"] .bg.working, .notch[data-open="true"][data-state="needs"] .bg.needs, .notch[data-open="true"][data-state="done"] .bg.blue { opacity: 1; }
+  .notch[data-open="true"][data-state="done"] .bg.green { opacity: 1; transition: opacity .8s linear 3.2s; } /* turns green after a few seconds */
+
+  /* the eyes: Mochi's real colours, shapes and motion, drawn at 1.6x */
+  .eyes { position: absolute; top: 0; left: 0; right: 0; height: 48px; display: flex; align-items: center; justify-content: center; gap: 26px; transition: opacity .2s linear; }
+  .notch[data-open="true"] .eyes { opacity: 0; }
+  .eye { --ec: #ffd9c9; width: 14px; height: 21px; box-sizing: border-box; border-radius: 50%; background: var(--ec); filter: drop-shadow(0 0 6px var(--ec)) drop-shadow(0 0 16px color-mix(in srgb, var(--ec) 55%, transparent)); animation: pulse 2.4s ease-in-out infinite, blink 4s ease-in-out infinite; }
+  @keyframes pulse { 50% { filter: drop-shadow(0 0 11px var(--ec)) drop-shadow(0 0 35px color-mix(in srgb, var(--ec) 55%, transparent)); } }
+  @keyframes blink { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.1); } }
+  .notch[data-state="working"] .eyes { animation: drift 5s ease-in-out infinite; }
+  .notch[data-state="working"] .eye { --ec: #ff9a5c; width: 19px; height: 11px; animation: pulse 3.6s ease-in-out infinite, blink 5s ease-in-out infinite; }
+  @keyframes drift { 0%, 100% { transform: translateX(-5px); } 50% { transform: translateX(5px); } }
+  .notch[data-state="needs"] .eyes { animation: hop 1.8s ease-out infinite; }
+  .notch[data-state="needs"] .eye { --ec: #ffd07a; width: 14px; height: 27px; animation: pulse 1s ease-in-out infinite; }
+  @keyframes hop { 0%, 45%, 100% { transform: translateY(0); } 10%, 30% { transform: translateY(-6px); } 20%, 40% { transform: translateY(0); } }
+  .notch[data-state="done"] .eyes { animation: bob 2.2s ease-in-out .5s infinite; }
+  .notch[data-state="done"] .eye { --ec: #7dffa8; width: 21px; height: 11px; background: transparent; border-top: 5px solid var(--ec); border-radius: 50% 50% 0 0; animation: pulse 2.4s ease-in-out infinite, eyepop .5s cubic-bezier(.3, 1.4, .5, 1) both; }
+  @keyframes eyepop { 0% { transform: scale(0); } 60% { transform: scale(1.3); } 100% { transform: scale(1); } }
+  @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+
+  /* panels */
+  .pane { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 18px 20px 0; opacity: 0; visibility: hidden; transform: translateY(6px); transition: opacity .25s ease, transform .4s var(--ease), visibility 0s .25s; }
+  .notch[data-open="true"][data-state="working"] .pane.working, .notch[data-open="true"][data-state="needs"] .pane.needs, .notch[data-open="true"][data-state="done"] .pane.done { opacity: 1; visibility: visible; transform: none; transition: opacity .3s ease .12s, transform .45s var(--ease) .12s, visibility 0s; }
+  .top { display: flex; align-items: center; gap: 16px; height: 118px; }
+  .face { width: 76px; height: 76px; flex: none; }
+  .stat { flex: 1; min-width: 0; }
+  .stat small { display: block; color: #a39a8c; font-size: 13px; line-height: 1.2; }
+  .stat strong { display: block; font-size: 38px; line-height: 1.05; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -.02em; margin: 1px 0 3px; }
+  .stat span { display: block; color: #a39a8c; font-size: 13.5px; line-height: 1.3; }
+  .stat span b { color: var(--text); font-size: 17px; }
+  .stat .chip { display: inline-block; margin-top: 6px; padding: 2px 10px; border-radius: 999px; background: rgba(255,255,255,.12); color: #ffd07a; font-size: 12px; font-weight: 700; }
+  .card { width: 38%; flex: none; border-radius: 16px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.06); padding: 10px 12px; font-size: 11.5px; }
+  .card .h { display: flex; justify-content: space-between; color: #a39a8c; margin-bottom: 7px; } .card .h b { color: var(--text); font-size: 12px; }
+  .card code { display: block; background: rgba(0,0,0,.22); border-radius: 5px; padding: 2px 6px; margin-top: 4px; font: 500 10.5px/1.5 ui-monospace, "Cascadia Mono", Consolas, monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card code.rm { background: rgba(255,80,90,.2); color: #ffb3b8; } .card code.ad { background: rgba(80,220,120,.2); color: #b5f5c8; }
+  .msg { width: 42%; flex: none; border-radius: 18px; background: rgba(255,255,255,.1); padding: 14px 16px; font-size: 14px; line-height: 1.4; }
+  .prog { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 6px; }
+  .prog div { font-size: 11.5px; color: #a39a8c; } .prog div.on { color: var(--text); font-weight: 700; }
+  .prog i { display: block; height: 4px; border-radius: 4px; background: rgba(255,255,255,.16); margin-bottom: 6px; position: relative; overflow: hidden; }
+  .prog i::after { content: ""; position: absolute; inset: 0; background: #f4f1ec; transform: scaleX(var(--p, 0)); transform-origin: left; }
+  .navbar { align-self: center; margin-top: 10px; display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: rgba(255,255,255,.08); }
+  .navbar span { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; color: rgba(244,241,236,.6); font-size: 12px; font-weight: 600; }
+  .navbar span.on { background: rgba(255,255,255,.14); color: var(--text); }
+  .navbar svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  /* needs you */
+  .pane.needs .top { height: auto; align-items: flex-start; gap: 18px; padding-top: 2px; }
+  .ask { flex: 1; min-width: 0; }
+  .badge { display: inline-flex; align-items: center; gap: 7px; padding: 4px 12px; border-radius: 999px; background: rgba(255,208,122,.16); color: var(--needs); font-size: 13px; font-weight: 700; }
+  .badge::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--needs); }
+  .ask h3 { font-size: 22px; margin: 8px 0 9px; letter-spacing: -.01em; }
+  .ask .field { border: 1px solid rgba(255,208,122,.2); background: rgba(0,0,0,.3); border-radius: 12px; padding: 8px 12px; font: 500 14px/1.3 ui-monospace, "Cascadia Mono", Consolas, monospace; }
+  .ask .row { display: flex; gap: 10px; align-items: center; margin-top: 12px; }
+  .ask .hint { margin-left: auto; color: #a39a8c; font-size: 12px; }
+  .chipbtn { min-height: 44px; padding: 0 24px; border-radius: 999px; border: 0; font: 700 16px/1 var(--font); cursor: pointer; }
+  .chipbtn.yes { background: var(--needs); color: #2b2100; } .chipbtn.no { background: rgba(255,255,255,.14); color: var(--text); }
+  .confetti { position: absolute; z-index: 2; inset: 0; pointer-events: none; overflow: hidden; }
+  .confetti i { position: absolute; width: 6px; height: 6px; border-radius: 2px; opacity: 0; top: 60px; left: 17%; }
+  .notch[data-open="true"][data-state="done"] .confetti i { animation: pop 1.2s var(--ease) .15s both; }
+  @keyframes pop { 0% { opacity: 0; transform: translate(0, 0) scale(.4); } 25% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--x), var(--y)) rotate(220deg) scale(1); } }
+  .confetti i:nth-child(1) { --x: -50px; --y: -30px; background: var(--amber); } .confetti i:nth-child(2) { --x: -30px; --y: 50px; background: var(--ok); }
+  .confetti i:nth-child(3) { --x: 10px; --y: -50px; background: #ff8aa0; } .confetti i:nth-child(4) { --x: 60px; --y: -20px; background: var(--needs); }
+  .confetti i:nth-child(5) { --x: 70px; --y: 40px; background: var(--amber); } .confetti i:nth-child(6) { --x: -60px; --y: 10px; background: var(--ok); }
+  .demo-bar { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+  .play { min-width: 44px; min-height: 44px; border-radius: 50%; border: 1px solid var(--line-2); background: rgba(244,241,236,.05); color: var(--text); cursor: pointer; display: inline-grid; place-items: center; }
+  .play:hover { background: rgba(244,241,236,.12); }
+  .tab-desc { max-width: 620px; min-height: 5.2em; margin: 16px auto 0; color: var(--muted); font-size: 16.5px; text-wrap: pretty; }
+  .tab-desc b { color: var(--text); }
+  .real { margin-top: 6px; color: var(--faint); font-size: 14px; }
   .seg { display: inline-flex; padding: 4px; border-radius: 999px; background: rgba(244,241,236,.05); border: 1px solid var(--line); gap: 2px; flex-wrap: wrap; justify-content: center; }
   .seg button { min-height: 44px; padding: 0 16px; border-radius: 999px; border: 0; background: transparent; color: var(--muted); font: 600 14.5px/1 var(--font); cursor: pointer; transition: background-color .2s, color .2s; display: inline-flex; align-items: center; gap: 8px; }
   .seg button::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--c, var(--muted)); box-shadow: 0 0 8px var(--c, transparent); }
   .seg button:hover { color: var(--text); }
   .seg button[aria-pressed="true"] { background: var(--text); color: #14110c; }
   .seg button[aria-pressed="true"]::before { box-shadow: none; }
-  .tab-desc { max-width: 620px; min-height: 5.2em; margin: 16px auto 0; color: var(--muted); font-size: 16.5px; text-wrap: pretty; }
-  .tab-desc b { color: var(--text); }
-  .real { margin-top: 6px; color: var(--faint); font-size: 14px; }
+  @media (max-width: 560px) { .card, .msg { display: none; } .stat strong { font-size: 30px; } .face { width: 60px; height: 60px; } .navbar span { padding: 5px 9px; } .ask h3 { font-size: 19px; } .ask .hint { display: none; } }
 
   /* ---------- sections ---------- */
   section { padding: clamp(60px, 9vw, 110px) 0; }
@@ -240,23 +319,56 @@
       <span><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Early version</span>
     </p>
 
-    <div class="theatre" aria-labelledby="th-title">
-      <h2 id="th-title" class="sr">Mochi in action</h2>
-      <div class="screen">
-        <video id="tour" muted loop playsinline preload="auto" poster="media/app/tour-poster.jpg" aria-label="Real recording of the Mochi notch: idle, Home, Claude working, an approval request and the finished job">
-          <source src="media/app/tour.mp4" type="video/mp4">
-        </video>
-        <button class="pp" id="pp" type="button" aria-label="Pause the recording"><svg class="icon" aria-hidden="true"><use href="#i-pause"/></svg></button>
+    <div class="demo" aria-labelledby="demo-title">
+      <h2 id="demo-title" class="sr">Try the notch</h2>
+      <div class="desk">
+        <div class="win" aria-hidden="true"><i></i><i></i><i></i><div class="code"><b style="width:46%"></b><b style="width:72%"></b><b style="width:58%"></b><b style="width:34%"></b><b style="width:66%"></b></div></div>
+        <div class="notch" id="notch" data-state="idle" data-open="false">
+          <div class="bg working"></div><div class="bg needs"></div><div class="bg blue"></div><div class="bg green"></div>
+          <div class="eyes" aria-hidden="true"><span class="eye"></span><span class="eye"></span></div>
+
+          <div class="pane working" aria-hidden="true">
+            <div class="top">
+              <svg class="face" viewBox="0 0 80 80" aria-hidden="true"><ellipse cx="40" cy="34" rx="25" ry="23" fill="#fffaf2" stroke="#e5dccb" stroke-width="2.5"/><path d="M26 27l9 3M54 27l-9 3" stroke="#2b2824" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="35" r="3.4" fill="#2b2824"/><circle cx="48" cy="35" r="3.4" fill="#2b2824"/><rect x="12" y="42" width="56" height="26" rx="7" fill="#d9d5cd" stroke="#bdb7ab" stroke-width="2"/><circle cx="40" cy="55" r="3.5" fill="#e0793a"/><rect x="6" y="68" width="68" height="5" rx="2.5" fill="#bdb7ab"/></svg>
+              <div class="stat"><small>webshop</small><strong class="tm">0:07</strong><span>Making changes &middot; step 2 of 4</span></div>
+              <div class="card"><div class="h"><b>TS checkout.ts</b><span>being edited</span></div><code class="rm">- const total = sum(items)</code><code class="ad">+ const net = sum(items)</code><code class="ad">+ const total = net * (1 +</code></div>
+            </div>
+            <div class="prog"><div class="on"><i style="--p:1"></i>Read</div><div class="on"><i style="--p:.55"></i>Edit</div><div><i></i>Test</div><div><i></i>Done</div></div>
+            <div class="navbar" aria-hidden="true"><span><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7v9h-5v-6H9v6H4z"/></svg></span><span class="on"><svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M6 6l12 12M18 6 6 18"/></svg>Claude</span><span><svg viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg></span><span><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2"/></svg></span><span><svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2"/></svg></span><span><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg></span></div>
+          </div>
+
+          <div class="pane needs">
+            <div class="top">
+              <svg class="face" viewBox="0 0 80 80" aria-hidden="true"><text x="58" y="20" font-size="20" font-weight="800" fill="#ffd07a">?</text><ellipse cx="38" cy="46" rx="27" ry="24" fill="#fffaf2" stroke="#e5dccb" stroke-width="2.5"/><circle cx="29" cy="43" r="4" fill="#2b2824"/><circle cx="46" cy="41" r="4.6" fill="#2b2824"/><ellipse cx="38" cy="53" rx="2.4" ry="3.2" fill="#2b2824"/><circle cx="21" cy="52" r="4" fill="#ffb0b8" opacity=".8"/><circle cx="55" cy="50" r="4" fill="#ffb0b8" opacity=".8"/></svg>
+              <div class="ask"><span class="badge">Needs you</span><h3>Allow this command?</h3><div class="field">npm test</div>
+                <div class="row"><button class="chipbtn yes" type="button" data-act="allow">Allow</button><button class="chipbtn no" type="button" data-act="deny">Deny</button><span class="hint">Hands back to Claude in 1:39</span></div></div>
+            </div>
+          </div>
+
+          <div class="pane done" aria-hidden="true">
+            <div class="top">
+              <svg class="face" viewBox="0 0 80 80" aria-hidden="true"><path d="M60 12l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="#e8b45a"/><ellipse cx="38" cy="42" rx="26" ry="23" fill="#fffaf2" stroke="#e5dccb" stroke-width="2.5"/><path d="M22 40q6-8 12 0M42 40q6-8 12 0" fill="none" stroke="#2b2824" stroke-width="3.4" stroke-linecap="round"/><path d="M29 49q9 9 18 0z" fill="#2b2824"/><circle cx="20" cy="49" r="4.2" fill="#ffb0b8" opacity=".85"/><circle cx="56" cy="49" r="4.2" fill="#ffb0b8" opacity=".85"/></svg>
+              <div class="stat"><small>webshop</small><strong>0:17</strong><span><b>Done</b> every step</span><span class="chip">&#9733; 5th job today</span></div>
+              <div class="msg">Done! VAT is now added at checkout. All 48 tests pass.</div>
+            </div>
+            <div class="prog"><div><i style="--p:1"></i>Read</div><div><i style="--p:1"></i>Edit</div><div><i style="--p:1"></i>Test</div><div class="on"><i style="--p:1"></i>Done</div></div>
+            <div class="navbar" aria-hidden="true"><span><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7v9h-5v-6H9v6H4z"/></svg></span><span class="on"><svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M6 6l12 12M18 6 6 18"/></svg>Claude</span><span><svg viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg></span><span><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2"/></svg></span><span><svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2"/></svg></span><span><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg></span></div>
+          </div>
+          <div class="confetti" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        </div>
       </div>
-      <div class="tabs"><div class="seg" role="group" aria-label="Jump to a moment">
-        <button type="button" data-t="idle" style="--c:#ffd9c9" aria-pressed="true">Idle</button>
-        <button type="button" data-t="home" style="--c:#f4f1ec" aria-pressed="false">Home</button>
-        <button type="button" data-t="working" style="--c:var(--working)" aria-pressed="false">Working</button>
-        <button type="button" data-t="needs" style="--c:var(--needs)" aria-pressed="false">Needs you</button>
-        <button type="button" data-t="done" style="--c:var(--ok)" aria-pressed="false">Done</button>
-      </div></div>
+      <div class="demo-bar">
+        <div class="seg" role="group" aria-label="Notch states">
+          <button type="button" data-s="idle" style="--c:#ffd9c9" aria-pressed="true">Idle</button>
+          <button type="button" data-s="working" style="--c:var(--working)" aria-pressed="false">Working</button>
+          <button type="button" data-s="needs" style="--c:var(--needs)" aria-pressed="false">Needs you</button>
+          <button type="button" data-s="done" style="--c:var(--ok)" aria-pressed="false">Done</button>
+        </div>
+        <button class="play" id="auto" type="button" aria-label="Pause the demo" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-pause"/></svg></button>
+      </div>
       <p class="tab-desc" id="desc"></p>
-      <p class="real">This is the real Mochi, recorded with sample data (a made-up project, track and to-dos).</p>
+      <p class="real">An illustration drawn in code, using Mochi's real colours and eyes. The real app is shown below.</p>
+      <p class="sr" id="live" aria-live="polite"></p>
     </div>
   </div>
 </div>
@@ -437,56 +549,63 @@
     new IntersectionObserver(function (es) { dock.classList.toggle('show', !es[0].isIntersecting); }, { threshold: 0 }).observe(hero);
   }
 
-  /* ----- the theatre: the real recording, with moments to jump to ----- */
-  var v = document.getElementById('tour'), pp = document.getElementById('pp'), desc = document.getElementById('desc');
+  /* ----- the notch demo ----- */
+  var notch = document.getElementById('notch');
+  var live = document.getElementById('live');
+  var desc = document.getElementById('desc');
   var btns = [].slice.call(document.querySelectorAll('.seg button'));
-  // seconds into the recording (video/out/shots/tour.json): idle, home, working, needs, done
-  var M = { idle: 0.01, home: 2.61, working: 7.72, needs: 16.35, allowed: 19.75, done: 25.07 };
+  var autoBtn = document.getElementById('auto');
+  var order = ['idle', 'working', 'needs', 'done'];
   var TEXT = {
-    idle: '<b>Idle.</b> Soft glowing eyes at the top of your screen. When Apple Music is playing, a little album-art bubble sits beside them.',
-    home: '<b>Home.</b> Rest your pointer on the notch for a moment and it opens: Claude, Music and Focus tiles, your next task and a navigation bar.',
+    idle: '<b>Idle.</b> Soft glowing eyes at the top of your screen. Rest your pointer on the notch and it opens to Home.',
     working: '<b>Working.</b> Amber eyes drift while Claude works. Hover to see the live timer, the step (Read, Edit, Test, Done) and the change being made.',
     needs: '<b>Needs you.</b> When Claude Code asks permission, the notch opens by itself. Allow or deny. Ignore it for about 100 seconds and Claude Code’s own prompt takes over.',
     done: '<b>Done.</b> A chime, a tiny celebration, Claude’s final message and the job count. After a few seconds the panel turns from blue to green.'
   };
-  var cur = '';
-  function which(t) { return t < M.home ? 'idle' : t < M.working ? 'home' : t < M.needs ? 'working' : t < M.allowed ? 'needs' : t < M.done ? 'working' : 'done'; }
-  function show(k) {
-    if (k === cur) return;
-    cur = k;
-    btns.forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-t') === k)); });
-    desc.innerHTML = TEXT[k];
+  var idx = 0, openT = null, timer = null, tm = null, secs = 0, userPaused = reduce.matches, hovering = false, visible = true;
+  var clocks = [].slice.call(document.querySelectorAll('.tm'));
+  function clock(n) { return Math.floor(n / 60) + ':' + ('0' + (n % 60)).slice(-2); }
+
+  function setState(s, announce) {
+    idx = order.indexOf(s);
+    notch.setAttribute('data-state', s);
+    notch.setAttribute('data-open', 'false'); // the eyes first, then the panel opens, as in the real app
+    clearTimeout(openT);
+    clearInterval(tm);
+    if (s === 'working') { secs = 3; clocks.forEach(function (c) { c.textContent = clock(secs); }); tm = setInterval(function () { secs++; clocks.forEach(function (c) { c.textContent = clock(secs); }); }, 1000); }
+    if (s !== 'idle') openT = setTimeout(function () { notch.setAttribute('data-open', 'true'); }, 1500);
+    btns.forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-s') === s)); });
+    [].forEach.call(notch.querySelectorAll('.pane'), function (p) { p.setAttribute('aria-hidden', String(!p.classList.contains(s))); });
+    desc.innerHTML = TEXT[s];
+    if (announce) live.textContent = TEXT[s].replace(/<[^>]+>/g, '');
   }
-  show('idle');
-  var raf = 0;
-  v.addEventListener('timeupdate', function () { if (!raf) raf = requestAnimationFrame(function () { raf = 0; show(which(v.currentTime)); }); });
-  var userPaused = false;
-  function setPP() {
-    var playing = !v.paused;
-    pp.setAttribute('aria-label', playing ? 'Pause the recording' : 'Play the recording');
-    pp.innerHTML = '<svg class="icon" aria-hidden="true"><use href="#' + (playing ? 'i-pause' : 'i-play') + '"/></svg>';
+  function tick() { setState(order[(idx + 1) % order.length], false); }
+  function sync() {
+    clearInterval(timer);
+    var run = !userPaused && !hovering && visible && !document.hidden;
+    if (run) timer = setInterval(tick, 6200);
+    autoBtn.setAttribute('aria-pressed', String(userPaused));
+    autoBtn.setAttribute('aria-label', userPaused ? 'Play the demo' : 'Pause the demo');
+    autoBtn.innerHTML = '<svg class="icon" aria-hidden="true"><use href="#' + (userPaused ? 'i-play' : 'i-pause') + '"/></svg>';
   }
   btns.forEach(function (b) {
+    b.addEventListener('click', function () { userPaused = true; setState(b.getAttribute('data-s'), true); sync(); });
+  });
+  autoBtn.addEventListener('click', function () { userPaused = !userPaused; sync(); });
+  [].forEach.call(notch.querySelectorAll('[data-act]'), function (b) {
     b.addEventListener('click', function () {
-      var k = b.getAttribute('data-t');
-      try { v.currentTime = M[k]; } catch (e) {}
-      show(k);
-      userPaused = false;
-      v.play().catch(function () {});
+      userPaused = true;
+      setState(b.getAttribute('data-act') === 'allow' ? 'done' : 'idle', true);
+      sync();
     });
   });
-  pp.addEventListener('click', function () { if (v.paused) { userPaused = false; v.play().catch(function () {}); } else { userPaused = true; v.pause(); } });
-  v.addEventListener('play', setPP); v.addEventListener('pause', setPP);
-  // autoplay only when allowed; pause when off-screen or the tab is hidden
-  var onScreen = true;
-  function auto() {
-    if (reduce.matches || userPaused) return;
-    if (onScreen && !document.hidden) v.play().catch(function () {}); else v.pause();
-  }
-  if ('IntersectionObserver' in window) new IntersectionObserver(function (es) { onScreen = es[0].isIntersecting; auto(); }, { threshold: 0.25 }).observe(v);
-  document.addEventListener('visibilitychange', auto);
-  setPP();
-  if (!reduce.matches) auto();
+  var demo = document.querySelector('.demo');
+  demo.addEventListener('mouseenter', function () { hovering = true; sync(); });
+  demo.addEventListener('mouseleave', function () { hovering = false; sync(); });
+  document.addEventListener('visibilitychange', sync);
+  if ('IntersectionObserver' in window) new IntersectionObserver(function (es) { visible = es[0].isIntersecting; sync(); }, { threshold: 0.2 }).observe(demo);
+  setState('idle', false);
+  sync();
 
   /* the eye close-ups loop only while visible and only if motion is welcome */
   [].forEach.call(document.querySelectorAll('video[data-loop]'), function (el) {
