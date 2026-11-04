@@ -91,7 +91,17 @@ class ApiChat extends EventEmitter {
     let acc = '';
     try {
       const req = this.request(this.history.slice(-MAX_TURNS), text, image, key);
-      const res = await this.fetch(req.url, { method: 'POST', headers: { 'content-type': 'application/json', ...req.headers }, body: JSON.stringify(req.body), signal: ctl.signal });
+      let res = await this.fetch(req.url, { method: 'POST', headers: { 'content-type': 'application/json', ...req.headers }, body: JSON.stringify(req.body), signal: ctl.signal });
+      if (res.status === 404 && this.discover && !this.discovered) {
+        // the default model may have been retired: ask the service which one this key can use, once, and retry
+        this.discovered = true;
+        const found = await this.discover(key, ctl.signal).catch(() => null);
+        if (found && found !== this.model) {
+          this.model = found;
+          const again = this.request(this.history.slice(-MAX_TURNS), text, image, key);
+          res = await this.fetch(again.url, { method: 'POST', headers: { 'content-type': 'application/json', ...again.headers }, body: JSON.stringify(again.body), signal: ctl.signal });
+        }
+      }
       if (!res.ok) throw await this.httpError(res);
       for await (const piece of this.read(res, ctl.signal)) {
         if (!piece) continue;
@@ -168,6 +178,19 @@ class ApiChat extends EventEmitter {
 class Gemini extends ApiChat {
   constructor(o) {
     super({ id: 'gemini', baseUrl: 'https://generativelanguage.googleapis.com', ...o });
+  }
+  // newest "flash" model (else any) that can generate text for this key
+  async discover(key, signal) {
+    const res = await this.fetch(`${this.baseUrl}/v1beta/models?pageSize=200`, { headers: { 'x-goog-api-key': key }, signal });
+    if (!res.ok) return null;
+    const j = await res.json();
+    const names = ((j && j.models) || [])
+      .filter((m) => (m.supportedGenerationMethods || []).includes('generateContent'))
+      .map((m) => String(m.name || '').replace(/^models\//, ''))
+      .filter((n) => /^gemini-[\d.]+-flash(-lite)?$/.test(n) || /^gemini-[\d.]+-flash$/.test(n));
+    const ver = (n) => parseFloat(n.split('-')[1]) - (n.endsWith('-lite') ? 0.001 : 0);
+    names.sort((a, b) => ver(b) - ver(a));
+    return names[0] || null;
   }
   request(history, text, image, key) {
     const parts = (t, img) => [...(img ? [{ inlineData: { mimeType: img.mediaType, data: img.data } }] : []), { text: t }];
