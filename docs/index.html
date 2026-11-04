@@ -134,8 +134,13 @@
   .band { background: var(--bg-2); border-block: 1px solid var(--line); }
 
   /* video */
-  .film { max-width: 980px; margin: 0 auto; border-radius: 22px; overflow: hidden; border: 1px solid var(--line-2); background: #000; box-shadow: 0 40px 100px rgba(0,0,0,.55); }
+  .film { position: relative; max-width: 980px; margin: 0 auto; border-radius: 22px; overflow: hidden; border: 1px solid var(--line-2); background: #000; box-shadow: 0 40px 100px rgba(0,0,0,.55); }
   .film video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: #000; }
+  .bigplay { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 84px; height: 84px; border-radius: 50%; border: 0; cursor: pointer; background: linear-gradient(180deg, var(--amber), var(--amber-2)); color: var(--ink); display: grid; place-items: center; box-shadow: 0 16px 50px rgba(0,0,0,.55); transition: transform .2s var(--ease); }
+  .bigplay .icon { width: 34px; height: 34px; margin-left: 4px; }
+  .bigplay:hover { transform: translate(-50%, -50%) scale(1.07); }
+  .film.playing .bigplay { display: none; }
+  .film-err { padding: 14px 18px; background: var(--surface); color: var(--muted); font-size: 15px; }
   .transcript { max-width: 980px; margin: 14px auto 0; }
 
   /* feature bento */
@@ -309,11 +314,13 @@
 <section id="watch">
   <div class="wrap">
     <div class="head c rv"><p class="kicker">The film</p><h2>See it in 100 seconds</h2><p class="sub">Every frame is the real Mochi interface. Nothing is faked with video effects.</p></div>
-    <div class="film rv">
-      <video controls preload="none" poster="media/poster.jpg" playsinline aria-describedby="vt">
+    <div class="film rv" id="film">
+      <video id="filmv" controls preload="none" poster="media/poster.jpg" playsinline aria-describedby="vt">
         <source src="media/mochi-trailer.mp4" type="video/mp4">
         Your browser can't play this video. You can <a href="media/mochi-trailer.mp4">download it</a> instead.
       </video>
+      <button class="bigplay" id="bigplay" type="button" aria-label="Play the film"><svg class="icon" aria-hidden="true"><use href="#i-play"/></svg></button>
+      <p class="film-err" id="filmerr" role="alert" hidden>The film could not play here. <a href="media/mochi-trailer.mp4">Download it</a> or <a href="https://github.com/YashPandloskar/mochi">see the repository</a>.</p>
     </div>
     <details class="transcript"><summary id="vt">Read what the film shows</summary><p>Meet Mochi. Your whole day, one hover away: Claude, music, focus and notes right in the notch. Give Claude a task, then get on with your day. Mochi watches Claude work, asks you to allow or deny commands, and chimes with a tiny celebration when it's done. Music sits beside the notch. A Pomodoro timer chimes at every switch. A to-do list and quick note are saved as a plain file. Ask Claude anything, even about your screen. Mochi naps when you're away and reminds you to rest your eyes. Mochi: your Claude Code, living in the notch.</p></details>
   </div>
@@ -428,6 +435,16 @@
   if (dock && hero && 'IntersectionObserver' in window) {
     new IntersectionObserver(function (es) { dock.classList.toggle('show', !es[0].isIntersecting); }, { threshold: 0 }).observe(hero);
   }
+
+  /* ----- the film ----- */
+  var film = document.getElementById('film'), fv = document.getElementById('filmv'), big = document.getElementById('bigplay'), ferr = document.getElementById('filmerr');
+  function playFilm() { fv.play().catch(function () { ferr.hidden = false; }); }
+  big.addEventListener('click', playFilm);
+  fv.addEventListener('play', function () { film.classList.add('playing'); ferr.hidden = true; });
+  fv.addEventListener('error', function () { ferr.hidden = false; });
+  fv.addEventListener('ended', function () { film.classList.remove('playing'); });
+  var watch = document.querySelector('a[href="#watch"].btn');
+  if (watch) watch.addEventListener('click', function () { setTimeout(playFilm, 450); });
 
   /* ----- the notch demo ----- */
   var notch = document.getElementById('notch');
