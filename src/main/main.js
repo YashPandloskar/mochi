@@ -238,6 +238,7 @@ app.whenReady().then(() => {
   activity.on('change', pushAssistant);
   const pushProviders = () => windowMgr.send('chat:providers', hub.list());
   hub.on('event', (ev) => {
+    if (ev && ev.type === 'error' && ev.detail) windowMgr.log('chat error: ' + ev.detail); // the key is never part of this text
     windowMgr.send('chat', ev);
     activity.chat(ev, hub.info().label);
   });

@@ -166,7 +166,7 @@ class ApiChat extends EventEmitter {
   fail(e) {
     this.busy = false;
     this.abort = null;
-    this.emit('event', { type: 'error', code: e && e.status === 401 ? 'bad-key' : undefined, message: this.explain(e) });
+    this.emit('event', { type: 'error', code: e && e.status === 401 ? 'bad-key' : undefined, message: this.explain(e), detail: `${this.id} model=${this.model} status=${(e && e.status) || '-'} ${String((e && e.message) || '').slice(0, 300)}` });
   }
 
   explain(e) {
