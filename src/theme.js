@@ -216,6 +216,7 @@ const theme = {
 
   // Chat tab: day-to-day questions to Claude, through your own Claude Code login (no API key).
   chat: {
+    models: { gemini: 'gemini-2.5-flash', openai: 'gpt-4o-mini', ollama: 'llama3.2' }, // defaults; override with providerModels in the config file
     maxChars: 20000, // longest message you can send
     maxImageBytes: 8_000_000, // largest picture (base64 characters) that can be attached
     screenPrompt: 'Explain what is on my screen.', // used when you attach a screenshot and type nothing

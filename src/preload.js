@@ -17,6 +17,12 @@ contextBridge.exposeInMainWorld('mochi', {
   onNotesStatus: (cb) => ipcRenderer.on('notes:status', (_e, s) => cb(s)), // { ok } or { ok: false, message }
   chatSend: (text, image) => ipcRenderer.send('chat:send', image ? { text, image } : text),
   captureScreen: () => ipcRenderer.invoke('chat:capture'), // only when you press the camera button
+  chatProviders: () => ipcRenderer.invoke('chat:providers'), // { current, providers: [{ id, label, hasKey, needsKey, keyUrl, how, model }] }
+  setChatProvider: (id) => ipcRenderer.invoke('chat:set-provider', id),
+  setChatKey: (id, key) => ipcRenderer.invoke('chat:set-key', id, key), // the key goes one way: it is never sent back
+  removeChatKey: (id) => ipcRenderer.invoke('chat:remove-key', id),
+  onChatProviders: (cb) => ipcRenderer.on('chat:providers', (_e, p) => cb(p)),
+  onAssistant: (cb) => ipcRenderer.on('assistant', (_e, a) => cb(a)), // chat / ping activity: { source, label, phase, message, chatsToday, quiet, sounds }
   chatStop: () => ipcRenderer.send('chat:stop'),
   chatNew: () => ipcRenderer.send('chat:new'),
   onChat: (cb) => ipcRenderer.on('chat', (_e, ev) => cb(ev)),
