@@ -23,3 +23,13 @@ npx electron video\inspect.js --stills=10,40 --outdir=video\out
 - `vtime.js` is the virtual clock, `render.js` the frame-exact renderer (H.264 + AAC, written as MP4).
 - The film never touches your real Mochi, notes or settings. Quit Mochi first only if you want the CPU to yourself.
 - The people, music and code in the film are made up.
+
+## Website pictures and clips (real interface)
+
+```powershell
+$env:FFMPEG = "C:\path\to\ffmpeg.exe"
+npx electron video\shots.js          # -> video\out\shots: tour.mp4 (+ tour.json marks), eyes-*.mp4, and one transparent PNG per panel
+```
+
+`shots.js` films `src/renderer/index.html` itself (off-screen, at 3x zoom) with sample data, so the website shows the real
+panels, gradients and eyes. Convert the PNGs to WebP and copy them into `docs\media\app`. `cuts.js` makes the social clips.
