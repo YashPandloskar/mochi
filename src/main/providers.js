@@ -102,6 +102,14 @@ class ApiChat extends EventEmitter {
           res = await this.fetch(again.url, { method: 'POST', headers: { 'content-type': 'application/json', ...again.headers }, body: JSON.stringify(again.body), signal: ctl.signal });
         }
       }
+      // "overloaded" (503) is usually over in seconds: wait a little and try again before giving up
+      for (let wait of [1500, 3500]) {
+        if (res.status !== 503 || this.stopped) break;
+        await new Promise((ok) => setTimeout(ok, wait));
+        if (this.stopped) break;
+        const again = this.request(this.history.slice(-MAX_TURNS), text, image, key);
+        res = await this.fetch(again.url, { method: 'POST', headers: { 'content-type': 'application/json', ...again.headers }, body: JSON.stringify(again.body), signal: ctl.signal });
+      }
       if (!res.ok) throw await this.httpError(res);
       for await (const piece of this.read(res, ctl.signal)) {
         if (!piece) continue;
@@ -152,6 +160,7 @@ class ApiChat extends EventEmitter {
     if (s === 401 || s === 403 || (s === 400 && /api key|api_key|invalid key/i.test(detail))) return `${this.label} did not accept that key. Check it in the chat settings.`;
     if (s === 429) return `${this.label} says you have hit a rate limit or your quota. Try again in a bit.`;
     if (s === 404) return `${this.label} could not find the model "${this.model}". Change it in the config file (providerModels).`;
+    if (s === 503) return `${this.label} is busy right now (it is overloaded on their side, not a problem with your key). Try again in a minute.`;
     if (s) return `${this.label} returned an error (${s}). ${detail}`.trim();
     if (e && /timeout/.test(String(e.message))) return `${this.label} took too long to answer.`;
     return this.offline(e);
