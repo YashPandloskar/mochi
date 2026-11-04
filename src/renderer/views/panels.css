@@ -523,3 +523,4 @@
 .cs-foot { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 10.5px; color: var(--muted); }
 .cs-link { border: 0; background: transparent; padding: 0; color: #ffc27d; font: inherit; font-size: 11px; text-decoration: underline; cursor: pointer; }
 .cs-foot .bad { color: #ff9a9a; }
+.cm-remove { margin-top: 4px; border-top: 1px solid rgba(255, 255, 255, 0.1); border-radius: 0 0 8px 8px; color: #ff9a8a; }

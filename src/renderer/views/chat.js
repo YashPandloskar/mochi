@@ -252,6 +252,20 @@
           return b;
         })
       );
+      // a saved key can be taken out again (a wrong one, or to paste a new one)
+      const keyed = list.providers.filter((q) => q.needsKey && q.hasKey);
+      keyed.forEach((q) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'cm-item cm-remove';
+        b.innerHTML = `<span>Remove ${q.label} key</span><em>then paste a new one</em>`;
+        b.addEventListener('click', async () => {
+          r.menu.hidden = true;
+          await window.mochi.removeChatKey(q.id);
+          window.mochi.chatProviders().then(applyProviders);
+        });
+        r.menu.appendChild(b);
+      });
       if (needKey && !r.keyInput.value) r.keyInput.placeholder = `Paste your ${p.label} key here`;
     }
     r.who.addEventListener('click', () => {
